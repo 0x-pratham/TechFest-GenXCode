@@ -71,7 +71,7 @@ export default async function DashboardPage({
   ]);
 
   const isStaff = profile?.role === "admin" || Boolean(staffPermission);
-  if (!registration && !isStaff) redirect("/register");
+  if (!registration && !isStaff) redirect("/signup");
 
   const name =
     profile?.full_name || user.user_metadata?.full_name || "Participant";

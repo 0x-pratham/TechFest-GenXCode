@@ -103,7 +103,7 @@ export default async function ProjectSubmissionPage({
     null;
 
   if (!confirmedReg && !isAdmin) {
-    redirect("/register");
+    redirect("/signup");
   }
 
   // Enforce mandatory Hack2Skill gate via inline /dashboard screen

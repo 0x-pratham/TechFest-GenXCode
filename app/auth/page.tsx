@@ -13,11 +13,11 @@ export default async function AuthPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const params = await searchParams;
-  const requested = params.next ?? "/register";
+  const requested = params.next ?? "/signup";
   const nextPath =
     requested.startsWith("/") && !requested.startsWith("//")
       ? requested
-      : "/register";
+      : "/signup";
 
   const supabase = await createClient();
   const destination = await getAuthenticatedDestination(supabase, nextPath);

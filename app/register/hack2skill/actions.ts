@@ -42,7 +42,7 @@ export async function confirmHack2SkillRegistration(formData: FormData) {
       null;
 
     if (!registration?.id) {
-      redirect("/register");
+      redirect("/signup");
     }
 
     const { error: updateError } = await supabase

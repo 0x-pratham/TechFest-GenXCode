@@ -42,7 +42,7 @@ export default async function DigitalPassPage() {
       .maybeSingle(),
   ]);
 
-  if (!registration) redirect("/register");
+  if (!registration) redirect("/signup");
 
   const { data: selection } = await supabase
     .from("registration_problem_statements")

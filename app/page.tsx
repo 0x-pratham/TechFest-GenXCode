@@ -20,7 +20,7 @@ export default async function Home() {
       ? "Volunteer Dashboard"
       : destination === "/dashboard"
         ? "Go to Dashboard"
-        : destination === "/register"
+        : destination === "/signup"
           ? "Complete Registration"
           : "Get your Pass";
 

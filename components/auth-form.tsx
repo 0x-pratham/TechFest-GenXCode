@@ -9,7 +9,7 @@ import { LoaderCircle } from "lucide-react";
 
 type AuthFormProps = { mode: "login" | "signup"; nextPath?: string };
 
-export function AuthForm({ mode, nextPath = "/register" }: AuthFormProps) {
+export function AuthForm({ mode, nextPath = "/signup" }: AuthFormProps) {
   const router = useRouter();
   const supabase = createClient();
   const [email, setEmail] = useState("");
@@ -48,7 +48,7 @@ export function AuthForm({ mode, nextPath = "/register" }: AuthFormProps) {
         return;
       }
 
-      router.replace(isSignup ? "/register" : nextPath);
+      router.replace(isSignup ? "/signup" : nextPath);
       router.refresh();
     } catch {
       setError("We couldn't complete your request. Check your connection and try again.");
@@ -63,7 +63,7 @@ export function AuthForm({ mode, nextPath = "/register" }: AuthFormProps) {
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(isSignup ? "/register" : nextPath)}` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(isSignup ? "/signup" : nextPath)}` },
       });
       if (oauthError) setError(oauthError.message);
     } catch {

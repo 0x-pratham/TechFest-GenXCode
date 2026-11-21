@@ -32,7 +32,7 @@ export async function getAuthenticatedDestination(
     return nextPath.startsWith("/admin") ? nextPath : "/admin";
   }
   if (profile?.role === "volunteer") {
-    return "/volunteer";
+    return "/volunteer/dashboard";
   }
 
   const rows = candidateRegs ?? [];
@@ -42,10 +42,10 @@ export async function getAuthenticatedDestination(
     null;
 
   if (!registration) {
-    return "/register";
+    return "/signup";
   }
 
-  if (nextPath === "/register" || nextPath === "/auth") {
+  if (nextPath === "/register" || nextPath === "/signup" || nextPath === "/auth") {
     return "/dashboard";
   }
 

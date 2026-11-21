@@ -5,13 +5,13 @@ import { getAuthenticatedDestination } from "@/lib/auth/get-authenticated-destin
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/register";
+  const next = searchParams.get("next") ?? "/signup";
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/register";
+      const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/signup";
       const destination = await getAuthenticatedDestination(supabase, safeNext);
       return NextResponse.redirect(new URL(destination ?? safeNext, origin));
     }
