@@ -90,9 +90,7 @@ export default async function VolunteerDashboardPage() {
       </Navbar>
 
       <div className="container-shell max-w-5xl pb-20 pt-24 sm:pt-28">
-        {/* Editorial Masthead + Warm Cream Staff Pass */}
         <header className="grid grid-cols-1 gap-7 border-b border-[#e2dad0] pb-8 lg:grid-cols-12 lg:items-stretch">
-          {/* Left Column: Natural Editorial Typography */}
           <div className="flex flex-col justify-between lg:col-span-7">
             <div>
               <p className="editorial text-[16px] italic font-normal text-[#6828a2] sm:text-[18px]">
@@ -121,15 +119,12 @@ export default async function VolunteerDashboardPage() {
             </div>
           </div>
 
-          {/* Right Column: Minimal Beige-Cream Accreditation Pass */}
           <aside className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#ded5c7] bg-gradient-to-b from-[#fdfbf7] via-[#f9f4eb] to-[#f3ece0] text-[#1b053e] shadow-[0_10px_28px_rgba(38,26,12,0.05)] lg:col-span-5">
-            {/* Top Subtle Plum Hairline */}
             <div
               aria-hidden="true"
               className="h-1 w-full bg-gradient-to-r from-[#6828a2] via-[#8b4bc7] to-[#6828a2]"
             />
 
-            {/* Top Header */}
             <div className="flex items-center justify-between px-5 pt-4 text-xs">
               <span className="editorial italic text-[#6828a2]">
                 Staff accreditation
@@ -139,7 +134,6 @@ export default async function VolunteerDashboardPage() {
               </span>
             </div>
 
-            {/* Pass Number */}
             <div className="px-5 py-4">
               <p className="text-xs text-[#756a5c]">Pass identifier</p>
               <p className="editorial mt-0.5 text-2xl font-bold tracking-tight text-[#1b053e] sm:text-[1.75rem]">
@@ -147,14 +141,12 @@ export default async function VolunteerDashboardPage() {
               </p>
             </div>
 
-            {/* Perforated Paper Tear Line */}
             <div className="relative flex items-center">
               <span className="-ml-2.5 h-4 w-4 rounded-full border border-[#ded5c7] bg-[#f9f6f1]" />
               <div className="w-full border-t border-dashed border-[#d6ccbc]" />
               <span className="-mr-2.5 h-4 w-4 rounded-full border border-[#ded5c7] bg-[#f9f6f1]" />
             </div>
 
-            {/* Bottom Station Stub */}
             <div className="flex items-center justify-between bg-[#efe7d9]/65 px-5 py-3 text-xs">
               <span className="text-[#6e6355]">Assigned station</span>
               <span className="font-semibold text-[#1b053e]">{scope}</span>
@@ -162,7 +154,6 @@ export default async function VolunteerDashboardPage() {
           </aside>
         </header>
 
-        {/* Primary Workspace: Live Scanner First, Followed by Attendance Lookup */}
         <div className="mt-7 space-y-7 sm:mt-8 sm:space-y-8">
           <EventOperationsScanner
             dayCount={dayCount}
