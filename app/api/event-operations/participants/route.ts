@@ -3,12 +3,150 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+interface NormalizedParticipant {
+  registration_id: string;
+  participant_name: string;
+  application_number: string;
+  participant_email: string;
+  checked_in_at: string | null;
+  snack_claims: number;
+}
+
+function normalizeRow(row: Record<string, unknown>): NormalizedParticipant {
+  const id = String(row.registration_id ?? row.id ?? "");
+  const name = String(
+    row.participant_name ??
+      row.full_name ??
+      row.name ??
+      [row.first_name, row.last_name].filter(Boolean).join(" ") ??
+      ""
+  ).trim();
+
+  const email = String(
+    row.participant_email ?? row.email ?? ""
+  ).trim();
+
+  const appNo = String(
+    row.application_number ??
+      row.pass_code ??
+      row.ticket_number ??
+      (id ? id.slice(0, 8).toUpperCase() : "")
+  ).trim();
+
+  const checkedInAt =
+    typeof row.checked_in_at === "string" && row.checked_in_at
+      ? row.checked_in_at
+      : row.checked_in === true
+        ? String(row.updated_at ?? row.created_at ?? new Date().toISOString())
+        : null;
+
+  const snackClaims = Number(
+    row.snack_claims ??
+      row.snacks_count ??
+      row.snack_count ??
+      (row.snack_claimed === true ? 1 : 0)
+  );
+
+  return {
+    registration_id: id,
+    participant_name: name || email || "Participant",
+    application_number: appNo,
+    participant_email: email,
+    checked_in_at: checkedInAt,
+    snack_claims: Number.isFinite(snackClaims) ? snackClaims : 0,
+  };
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
-  const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
-  const { data, error: searchError } = await supabase.rpc("event_search_participants", { p_query: query });
-  if (searchError) return NextResponse.json({ error: searchError.message.includes("Volunteer access") ? searchError.message : "Could not search participants." }, { status: 403 });
-  return NextResponse.json({ participants: data ?? [] }, { headers: { "Cache-Control": "no-store, private" } });
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [{ data: profile }, { data: staffPermission }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase.rpc("event_actor_permission"),
+  ]);
+
+  const isAdmin = profile?.role === "admin";
+  let isVolunteer =
+    profile?.role === "volunteer" || Boolean(staffPermission);
+
+  if (!isAdmin && !isVolunteer) {
+    const { data: volunteer } = await supabase
+      .from("event_volunteers")
+      .select("is_active")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    isVolunteer = Boolean(volunteer?.is_active);
+  }
+
+  if (!isAdmin && !isVolunteer) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const q = (searchParams.get("q") ?? "").trim();
+
+  // 1. Try existing search RPC if present in Supabase
+  const { data: rpcRows, error: rpcError } = await supabase.rpc(
+    "search_event_participants",
+    { search_query: q }
+  );
+
+  if (!rpcError && Array.isArray(rpcRows)) {
+    return NextResponse.json(
+      {
+        participants: rpcRows
+          .slice(0, 100)
+          .map((r) => normalizeRow(r as Record<string, unknown>)),
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
+  // 2. Direct schema-agnostic query on registrations
+  const { data: regRows, error: regError } = await supabase
+    .from("registrations")
+    .select("*")
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (regError) {
+    console.error("[event-operations/participants] Query error:", regError.message);
+    return NextResponse.json(
+      { error: `Could not load participants: ${regError.message}` },
+      { status: 500 }
+    );
+  }
+
+  const normalized = (regRows ?? []).map((r) =>
+    normalizeRow(r as Record<string, unknown>)
+  );
+
+  const needle = q.toLowerCase();
+  const filtered = needle
+    ? normalized.filter(
+        (p) =>
+          p.participant_name.toLowerCase().includes(needle) ||
+          p.participant_email.toLowerCase().includes(needle) ||
+          p.application_number.toLowerCase().includes(needle)
+      )
+    : normalized;
+
+  return NextResponse.json(
+    { participants: filtered.slice(0, 100) },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

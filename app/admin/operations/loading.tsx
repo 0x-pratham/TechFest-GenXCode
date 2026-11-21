@@ -1,2 +1,3 @@
-import { PageSkeleton } from "@/components/page-skeleton";
-export default function Loading() { return <PageSkeleton variant="operations" />; }
+export default function Loading() {
+  return null;
+}

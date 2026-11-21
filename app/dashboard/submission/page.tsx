@@ -1,67 +1,282 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Lock, FileUp } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  LayoutDashboard,
+  Lock,
+  LogOut,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { saveProjectSubmission } from "./actions";
+import { signOut } from "@/app/dashboard/actions";
+import { Navbar } from "@/components/navbar";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
-
-const field = "mt-2 w-full rounded-xl border border-[#eadff5] bg-white px-4 py-3 text-sm outline-none focus:border-[#5f2295] focus:ring-2 focus:ring-purple-100";
-const label = "block text-xs font-semibold text-[#57436d]";
+import { SubmissionStatusCard } from "@/components/dashboard/submission/submission-status-card";
+import { ProjectSubmissionForm } from "@/components/dashboard/submission/project-submission-form";
+import type {
+  ParticipantSubmissionRecord,
+  ProblemOption,
+} from "@/components/dashboard/submission/submission-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProjectSubmissionPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
+const ERROR_MESSAGES: Record<string, string> = {
+  closed: "The submission window is currently closed.",
+  registration: "A confirmed registration is required before submitting.",
+  validation: "Please fill in all required fields and use valid HTTPS URLs.",
+  file: "Please upload a .ppt or .pptx file up to 15 MB.",
+  upload: "Could not upload your presentation deck. Please try again.",
+  save: "Could not save your submission. Please try again.",
+};
+
+function formatIstDeadline(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(parsed)
+    .replace(",", "");
+}
+
+export default async function ProjectSubmissionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; saved?: string }>;
+}) {
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) redirect("/login?next=/dashboard/submission");
-  const [{ data: registration }, { data: window }, { data: problems }] = await Promise.all([
-    supabase.from("registrations").select("id,application_number,status").eq("created_by", user.id).eq("status", "confirmed").maybeSingle(),
-    supabase.from("project_submission_settings").select("is_open,closes_at").eq("id", 1).maybeSingle(),
-    supabase.from("problem_statements").select("id,title").eq("is_active", true).order("display_order"),
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) redirect("/auth?next=/dashboard/submission");
+
+  // Wave 1: Load profile, candidate registrations, window settings, tracks & params
+  const [
+    { data: profile },
+    { data: candidateRegs },
+    { data: windowSettings },
+    { data: problemsData },
+    params,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role,full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("registrations")
+      .select("*")
+      .or(
+        user.email
+          ? `created_by.eq.${user.id},email.eq.${user.email}`
+          : `created_by.eq.${user.id}`
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("project_submission_settings")
+      .select("is_open,closes_at")
+      .eq("id", 1)
+      .maybeSingle(),
+    supabase
+      .from("problem_statements")
+      .select("id,title,domain")
+      .eq("is_active", true)
+      .order("display_order"),
+    searchParams,
   ]);
-  if (!registration) redirect("/register");
-  const { data: submission } = await supabase.from("project_submissions").select("*").eq("registration_id", registration.id).maybeSingle();
-  const params = await searchParams;
-  const isOpen = Boolean(window?.is_open && (!window.closes_at || new Date(window.closes_at).getTime() > Date.now()));
-  const closeLabel = window?.closes_at ? new Date(window.closes_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }) : null;
-  const errors: Record<string, string> = {
-    closed: "The submission window is closed.", registration: "A confirmed registration is required.",
-    validation: "Please complete all required fields and enter valid HTTPS links.",
-    file: "Upload a PPT or PPTX file up to 15 MB.", upload: "The presentation could not be uploaded. Please try again.",
-    save: "Your submission could not be saved. Please try again.",
-  };
-  return <main className="min-h-screen bg-[#fcfaff]">
-    <header className="container-shell pt-4"><div className="surface-glass-nav flex items-center justify-between rounded-2xl px-4 py-4 sm:px-6"><Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-semibold text-[#69408e]"><ArrowLeft size={15}/> Dashboard</Link><span className="text-xs font-bold tracking-wider text-[#5f2295]">GENXCODE · SUBMISSIONS</span></div></header>
-    <section className="container-shell max-w-4xl py-10 sm:py-14">
-      <p className="eyebrow">SOLO HACKATHON</p><h1 className="editorial mt-3 text-4xl text-[#220749] sm:text-6xl">Project submission.</h1>
-      <p className="mt-3 text-sm leading-6 text-[#76678a]">Submit your project details, working production link and presentation. Your submission is linked to application {registration.application_number}.</p>
-      {params.saved && <p role="status" className="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800">Your project submission has been saved successfully.</p>}
-      {params.error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{errors[params.error] ?? "Something went wrong."}</p>}
-      {!isOpen && <div className="mt-8 rounded-2xl border border-[#eadff5] bg-white p-6 sm:p-9"><div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#f4effc] text-[#5f2295]"><Lock size={25}/></div><h2 className="editorial mt-5 text-center text-3xl">Submissions are closed.</h2><p className="mx-auto mt-3 max-w-lg text-center text-sm leading-6 text-[#76678a]">The organizers have not opened the submission window or it has been closed. Please check back later.</p>{submission && <p className="mt-5 text-center text-xs font-semibold text-[#5f2295]">Your previous submission is saved and available to organizers.</p>}</div>}
-      {isOpen && <form action={saveProjectSubmission} className="mt-8 space-y-6">
-        <section className="rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-8">
-          <p className="eyebrow">01 · PROJECT DETAILS</p><h2 className="editorial mt-2 text-3xl">Tell us about your project.</h2>
-          <label className={label + " mt-6"}>Project title *<input required minLength={3} maxLength={120} name="project_title" defaultValue={submission?.project_title ?? ""} className={field} placeholder="Give your project a name"/></label>
-          <label className={label + " mt-5"}>Selected problem statement *<select required name="problem_statement_id" defaultValue={submission?.problem_statement_id ?? ""} className={field}><option value="" disabled>Select your problem statement</option>{(problems ?? []).map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
-          <label className={label + " mt-5"}>Project description *<textarea required minLength={20} maxLength={3000} rows={5} name="description" defaultValue={submission?.description ?? ""} className={field} placeholder="Describe what your project does (20–3000 characters)."/></label>
-          <label className={label + " mt-5"}>Proposed solution and key features *<textarea required minLength={10} maxLength={3000} rows={5} name="solution_features" defaultValue={submission?.solution_features ?? ""} className={field} placeholder="Explain your approach and the main features."/></label>
-        </section>
-        <section className="rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-8">
-          <p className="eyebrow">02 · PROJECT LINKS</p><h2 className="editorial mt-2 text-3xl">Show us what you built.</h2>
-          <label className={label + " mt-6"}>GitHub repository URL *<input required type="url" name="github_url" pattern="https://.*" defaultValue={submission?.github_url ?? ""} className={field} placeholder="https://github.com/username/project"/></label>
-          <label className={label + " mt-5"}>Live production link *<input required type="url" name="production_url" pattern="https://.*" defaultValue={submission?.production_url ?? ""} className={field} placeholder="https://your-project.vercel.app"/></label>
-        </section>
-        <section className="rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-8">
-          <p className="eyebrow">03 · PRESENTATION</p><h2 className="editorial mt-2 text-3xl">Upload your PPT.</h2><p className="mt-2 text-sm leading-6 text-[#76678a]">A PPT or PPTX is mandatory. A simple AI-generated presentation is also accepted. Maximum file size: 15 MB.</p>
-          <label className={label + " mt-6"}>Project presentation *{submission?.presentation_path && <span className="ml-2 font-normal text-green-700">Current file uploaded</span>}<input type="file" name="presentation" accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" required={!submission?.presentation_path} className={field}/></label>
-          {submission?.presentation_path && <p className="mt-2 text-xs text-[#8d7ba3]">Choose another file only if you want to replace your existing presentation.</p>}
-        </section>
-        <section className="rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-8">
-          <p className="eyebrow">04 · DECLARATION</p><label className="mt-4 flex items-start gap-3 text-sm leading-6 text-[#57436d]"><input required type="checkbox" name="declaration" className="mt-1 size-4 accent-[#5f2295]"/><span>I confirm that this is my original project and that the GitHub repository, production link and presentation are accessible for evaluation.</span></label>
-        </section>
-        <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center"><p className="text-xs text-[#8d7ba3]">{closeLabel ? "Submission deadline: " + closeLabel + " (IST)" : "The submission window is controlled by the organizers."}</p><PendingSubmitButton pendingLabel="Uploading & submitting…" className="rounded-full bg-[#5f2295] px-7 py-3.5 text-sm font-semibold text-white"><FileUp size={16}/>{submission ? "Update submission" : "Submit project"}</PendingSubmitButton></div>
-      </form>}
-      {submission && <div className="mt-6 rounded-2xl bg-[#f4effc] p-5 text-sm text-[#57436d]"><p className="font-semibold">Current review status: <span className="capitalize">{submission.status.replace("_"," ")}</span></p><p className="mt-1 text-xs">Submitted {new Date(submission.submitted_at).toLocaleString("en-IN")}</p></div>}
-    </section>
-  </main>;
+
+  const isAdmin = profile?.role === "admin";
+  const rows = (candidateRegs ?? []) as Record<string, unknown>[];
+  const confirmedReg =
+    rows.find((r) => String(r.status ?? "").toLowerCase() !== "cancelled") ??
+    rows[0] ??
+    null;
+
+  if (!confirmedReg && !isAdmin) {
+    redirect("/register");
+  }
+
+  // Enforce mandatory Hack2Skill gate via inline /dashboard screen
+  if (confirmedReg && !confirmedReg.hack2skill_registered && !isAdmin) {
+    redirect("/dashboard");
+  }
+
+  const registration = confirmedReg
+    ? {
+        id: String(confirmedReg.id),
+        application_number: String(
+          confirmedReg.application_number ?? "GENX-PASS"
+        ),
+        raw: confirmedReg,
+      }
+    : {
+        id: "",
+        application_number: "ADMIN-PREVIEW",
+        raw: {} as Record<string, unknown>,
+      };
+
+  // Wave 2: Load existing submission + chosen problem from registration_problem_statements
+  const [{ data: submissionData }, { data: problemSelection }] =
+    await Promise.all([
+      registration.id
+        ? supabase
+            .from("project_submissions")
+            .select("*")
+            .eq("registration_id", registration.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      registration.id
+        ? supabase
+            .from("registration_problem_statements")
+            .select("problem_statement_id")
+            .eq("registration_id", registration.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+  const submission = (submissionData ??
+    null) as ParticipantSubmissionRecord | null;
+  const problems = (problemsData ?? []) as ProblemOption[];
+
+  const regRaw = registration.raw;
+  const assignedProblemId =
+    [
+      problemSelection?.problem_statement_id,
+      regRaw.problem_statement_id,
+      submission?.problem_statement_id,
+    ].find((v): v is string => typeof v === "string" && v.trim().length > 0) ??
+    null;
+
+  let lockedProblem: ProblemOption | null = assignedProblemId
+    ? problems.find((p) => p.id === assignedProblemId) ?? null
+    : null;
+
+  if (assignedProblemId && !lockedProblem) {
+    const { data: fallbackProblem } = await supabase
+      .from("problem_statements")
+      .select("id,title,domain")
+      .eq("id", assignedProblemId)
+      .maybeSingle();
+    if (fallbackProblem) lockedProblem = fallbackProblem as ProblemOption;
+  }
+
+  const closesAtMs = windowSettings?.closes_at
+    ? new Date(windowSettings.closes_at).getTime()
+    : null;
+  const isOpen = Boolean(
+    windowSettings?.is_open &&
+      (!closesAtMs || Number.isNaN(closesAtMs) || closesAtMs > Date.now())
+  );
+  const closeLabel = formatIstDeadline(windowSettings?.closes_at);
+
+  return (
+    <main className="min-h-screen bg-[#f9f6f1] text-[#1b053e]">
+      <Navbar>
+        <Link href="/dashboard">
+          <LayoutDashboard size={14} className="text-[#6828a2]" />
+          <span>Dashboard</span>
+        </Link>
+
+        <form action={signOut}>
+          <PendingSubmitButton
+            pendingLabel="Signing out…"
+            className="group/signout !transition-colors !duration-100 hover:!border-[#f5c2c7] hover:!from-[#fff8f8] hover:!via-[#fff1f2] hover:!to-[#ffe4e6] hover:!text-[#be123c] hover:!shadow-[0_4px_14px_rgba(225,29,72,0.12)] active:!scale-[0.98] active:!border-[#fda4af] active:!from-[#fff1f2] active:!via-[#ffe4e6] active:!to-[#fecdd3] active:!text-[#9f1239]"
+          >
+            <LogOut
+              size={14}
+              className="text-[#6828a2] transition-colors duration-100 group-hover/signout:text-[#e11d48] group-active/signout:text-[#be123c]"
+            />
+            <span>Sign out</span>
+          </PendingSubmitButton>
+        </form>
+      </Navbar>
+
+      <div className="container-shell max-w-4xl pb-20 pt-24 sm:pt-32">
+        {/* Warm Editorial Header */}
+        <header className="border-b border-[#e5ddd2] pb-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-[#6d627a]">
+            <p className="editorial text-[15px] italic text-[#6828a2] sm:text-[16px]">
+              GenXCode Solo Hackathon
+            </p>
+            <p className="font-mono text-[11px] text-[#5e536b] sm:text-[11.5px]">
+              Application {registration.application_number}
+            </p>
+          </div>
+
+          <h1 className="editorial mt-2 text-3xl font-bold leading-[1.08] tracking-[-0.025em] text-[#1b053e] sm:text-5xl">
+            Project submission
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#524661] sm:text-[15px]">
+            Submit your GitHub repository, live deployment, and presentation
+            deck for evaluation.
+          </p>
+        </header>
+
+        {/* Feedback Banners */}
+        {params.saved && (
+          <div
+            role="status"
+            className="mt-6 flex items-center gap-2.5 rounded-xl border border-[#bfe6c9] bg-[#eefaf1] px-4 py-3 text-xs font-semibold text-[#1b7a37] sm:text-sm"
+          >
+            <CheckCircle2 size={16} className="shrink-0" />
+            <span>Your project submission has been saved.</span>
+          </div>
+        )}
+
+        {params.error && (
+          <div
+            role="alert"
+            className="mt-6 flex items-center gap-2.5 rounded-xl border border-[#f5c2c7] bg-[#fff1f2] px-4 py-3 text-xs font-semibold text-[#be123c] sm:text-sm"
+          >
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{ERROR_MESSAGES[params.error] ?? "Something went wrong."}</span>
+          </div>
+        )}
+
+        {/* Live Project Status Card (Shown immediately once submitted) */}
+        {submission && (
+          <SubmissionStatusCard
+            submission={submission}
+            problemTitle={lockedProblem?.title ?? "Assigned problem statement"}
+          />
+        )}
+
+        {/* Closed State vs Open Form */}
+        {!isOpen ? (
+          <section className="mt-8 rounded-2xl border border-[#e3dbd0] bg-white p-7 text-center shadow-[0_6px_24px_rgba(27,5,62,0.025)] sm:p-10">
+            <div className="mx-auto grid size-12 place-items-center rounded-2xl border border-[#dfcdf5] bg-[#f6f0fd] text-[#6828a2]">
+              <Lock size={22} />
+            </div>
+            <h2 className="editorial mt-4 text-2xl font-bold text-[#1b053e] sm:text-3xl">
+              Submissions are closed
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#524661]">
+              The submission portal is currently locked by the organizers.
+              {submission
+                ? " Your existing entry is safely recorded above."
+                : " Check back once the window opens."}
+            </p>
+          </section>
+        ) : (
+          <ProjectSubmissionForm
+            submission={submission}
+            lockedProblem={lockedProblem}
+            problems={problems}
+            closeLabel={closeLabel}
+          />
+        )}
+      </div>
+    </main>
+  );
 }

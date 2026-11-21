@@ -1,35 +1,53 @@
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
-
-/**
- * Resolve the signed-in user's canonical destination without changing their session.
- * Admins and volunteers are checked before participant registration.
- */
 export async function getAuthenticatedDestination(
-  supabase: ServerSupabaseClient,
-  fallback = "/register",
-) {
-  const { data: { user }, error } = await supabase.auth.getUser();
+  supabase: SupabaseClient,
+  nextPath = "/dashboard"
+): Promise<string | null> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
   if (error || !user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: candidateRegs }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("registrations")
+      .select("id,status")
+      .or(
+        user.email
+          ? `created_by.eq.${user.id},email.eq.${user.email}`
+          : `created_by.eq.${user.id}`
+      )
+      .order("created_at", { ascending: false }),
+  ]);
 
-  if (profile?.role === "admin") return "/admin";
+  if (profile?.role === "admin") {
+    return nextPath.startsWith("/admin") ? nextPath : "/admin";
+  }
+  if (profile?.role === "volunteer") {
+    return "/volunteer";
+  }
 
-  const { data: volunteerPermission } = await supabase.rpc("event_actor_permission");
-  if (volunteerPermission) return "/volunteer/dashboard";
+  const rows = candidateRegs ?? [];
+  const registration =
+    rows.find((r) => String(r.status ?? "").toLowerCase() !== "cancelled") ??
+    rows[0] ??
+    null;
 
-  const { data: registration } = await supabase
-    .from("registrations")
-    .select("id")
-    .eq("created_by", user.id)
-    .neq("status", "cancelled")
-    .maybeSingle();
+  if (!registration) {
+    return "/register";
+  }
 
-  return registration ? "/dashboard" : fallback;
+  if (nextPath === "/register" || nextPath === "/auth") {
+    return "/dashboard";
+  }
+
+  return nextPath || "/dashboard";
 }
