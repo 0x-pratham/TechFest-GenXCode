@@ -27,6 +27,11 @@ const ACTION_LABELS: Record<
     category: "checkin",
     tone: "text-[#1b7a37]",
   },
+  duplicate_checkin_attempt: {
+    label: "Duplicate check-in scan blocked",
+    category: "checkin",
+    tone: "text-[#b45309]",
+  },
   snack_claimed: {
     label: "Refreshment claimed",
     category: "snacks",
@@ -36,6 +41,11 @@ const ACTION_LABELS: Record<
     label: "Refreshment served",
     category: "snacks",
     tone: "text-[#6828a2]",
+  },
+  duplicate_snack_attempt: {
+    label: "Duplicate snack scan blocked",
+    category: "snacks",
+    tone: "text-[#b45309]",
   },
   volunteer_saved: {
     label: "Volunteer scanner access updated",
