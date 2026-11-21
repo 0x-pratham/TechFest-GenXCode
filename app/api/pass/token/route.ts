@@ -1,27 +1,9 @@
-import { createHmac, randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 const TOKEN_TTL_SECONDS = 30;
-
-function getSigningSecret(): string {
-  const secret =
-    process.env.PASS_TOKEN_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (secret && secret.trim().length > 0) {
-    return secret.trim();
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "Missing PASS_TOKEN_SECRET or SUPABASE_SERVICE_ROLE_KEY in production."
-    );
-  }
-
-  return "genxcode-local-dev-pass-secret";
-}
 
 export async function GET() {
   try {
@@ -32,50 +14,57 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: registration, error: regError } = await supabase
-      .from("registrations")
-      .select("id,application_number,status")
-      .eq("created_by", user.id)
-      .eq("status", "confirmed")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (regError || !registration) {
       return NextResponse.json(
-        { error: "No confirmed registration found" },
-        { status: 404 }
+        { error: "Session expired. Please sign in again." },
+        { status: 401, headers: { "Cache-Control": "no-store" } }
       );
     }
 
-    const nowSec = Math.floor(Date.now() / 1000);
-    const expSec = nowSec + TOKEN_TTL_SECONDS;
+    const { data, error: rpcError } = await supabase.rpc(
+      "issue_digital_pass_token"
+    );
 
-    const payload = Buffer.from(
-      JSON.stringify({
-        rid: registration.id,
-        app: registration.application_number,
-        uid: user.id,
-        jti: randomBytes(6).toString("hex"),
-        iat: nowSec,
-        exp: expSec,
-      })
-    ).toString("base64url");
+    if (rpcError) {
+      console.error("[/api/pass/token] RPC error:", rpcError);
+      return NextResponse.json(
+        { error: rpcError.message || "Unable to issue pass token" },
+        { status: 400, headers: { "Cache-Control": "no-store" } }
+      );
+    }
 
-    const sig = createHmac("sha256", getSigningSecret())
-      .update(payload)
-      .digest("base64url");
+    const row = Array.isArray(data) ? data[0] : data;
+    const rawUuid =
+      typeof row === "string"
+        ? row
+        : typeof row?.token === "string"
+          ? row.token
+          : null;
 
-    const token = `GXC1.${payload}.${sig}`;
+    if (!rawUuid) {
+      return NextResponse.json(
+        { error: "Pass token unavailable" },
+        { status: 500, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    const formattedToken = rawUuid.startsWith("GXC-PASS-V1:")
+      ? rawUuid
+      : `GXC-PASS-V1:${rawUuid}`;
+
+    const expiresAtMs = row?.expires_at
+      ? new Date(row.expires_at).getTime()
+      : Date.now() + TOKEN_TTL_SECONDS * 1000;
+
+    const expiresIn = Math.max(
+      5,
+      Math.round((expiresAtMs - Date.now()) / 1000)
+    );
 
     return NextResponse.json(
       {
-        token,
-        expiresIn: TOKEN_TTL_SECONDS,
-        expiresAt: expSec * 1000,
+        token: formattedToken,
+        expiresIn,
+        expiresAt: expiresAtMs,
       },
       {
         headers: {
@@ -84,10 +73,10 @@ export async function GET() {
       }
     );
   } catch (err) {
-    console.error("[/api/pass/token] failed:", err);
+    console.error("[/api/pass/token] unexpected error:", err);
     return NextResponse.json(
       { error: "Unable to issue pass token" },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }

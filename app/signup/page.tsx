@@ -86,15 +86,15 @@ export default async function SignupPage() {
         </form>
       </Navbar>
 
-      <section className="container-shell max-w-3xl pb-20 pt-28 sm:pt-32">
-        <header className="mb-8">
+      <section className="container-shell max-w-6xl px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:px-8">
+        <header className="mb-8 max-w-2xl">
           <p className="editorial text-[16px] italic text-[#5f2295] sm:text-[18px]">
             Take Off With GenXCode · Free Pass Registration
           </p>
           <h1 className="editorial mt-1.5 text-3xl font-bold leading-[1.08] tracking-[-0.025em] text-[#220749] sm:text-5xl">
             Complete your builder profile.
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#76678a] sm:text-[15px]">
+          <p className="mt-3 text-sm leading-relaxed text-[#76678a] sm:text-[15px]">
             Signed in as{" "}
             <span className="font-semibold text-[#220749]">{user.email}</span>.
             Fill in your academic details below to generate your complimentary

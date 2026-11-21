@@ -49,6 +49,7 @@ export function DigitalPass({
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isObscured, setIsObscured] = useState<boolean>(false);
   const [tokenUnavailable, setTokenUnavailable] = useState<boolean>(false);
+  const [errorReason, setErrorReason] = useState<string | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const expiresAtRef = useRef<number>(0);
@@ -119,12 +120,20 @@ export function DigitalPass({
     setIsRefreshing(true);
 
     try {
-      const res = await fetch("/api/pass/token", { cache: "no-store" });
+      const res = await fetch("/api/pass/token", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Token fetch failed");
+        throw new Error(
+          typeof data.error === "string" && data.error.trim().length > 0
+            ? data.error
+            : `Unable to load pass (${res.status})`
+        );
       }
 
-      const data = await res.json();
       const serverDataUrl: unknown = data.qrDataUrl || data.qrUrl;
       const rawToken: unknown = data.token || data.qrToken || data.payload;
 
@@ -147,11 +156,15 @@ export function DigitalPass({
       setSecondsLeft(validSeconds);
       expiresAtRef.current = Date.now() + validSeconds * 1000;
       setTokenUnavailable(false);
-    } catch {
+      setErrorReason(null);
+    } catch (err) {
       setQrSrc(null);
       setSecondsLeft(0);
       expiresAtRef.current = 0;
       setTokenUnavailable(true);
+      setErrorReason(
+        err instanceof Error ? err.message : "Tap refresh to load code"
+      );
     } finally {
       inFlightRef.current = false;
       setIsRefreshing(false);
@@ -379,7 +392,7 @@ export function DigitalPass({
                           QR paused
                         </p>
                         <p className="mt-0.5 text-[10px] leading-tight text-[#756d65]">
-                          Tap refresh to load code
+                          {errorReason || "Tap refresh to load code"}
                         </p>
                       </div>
                     ) : qrSrc ? (
@@ -425,7 +438,7 @@ export function DigitalPass({
                       <ShieldCheck className="h-3 w-3 shrink-0" />
                       <span>
                         {tokenUnavailable
-                          ? "Offline"
+                          ? "Unavailable"
                           : `Token TTL · ${secondsLeft}s`}
                       </span>
                     </span>

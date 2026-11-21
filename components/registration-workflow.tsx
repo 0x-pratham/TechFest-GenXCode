@@ -1,8 +1,10 @@
 "use client";
+
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, LoaderCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { RegisterPassPreview } from "@/components/register-pass-preview";
 
 type Profile = {
   full_name: string | null;
@@ -17,8 +19,10 @@ type Profile = {
 
 type ExistingRegistration = { application_number: string | null };
 
+const FORM_ID = "gxc-registration-form";
+
 const fieldClass =
-  "mt-2 block min-w-0 w-full max-w-full rounded-xl border border-[#eadff5] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5f2295] focus:ring-2 focus:ring-purple-100";
+  "mt-2 block min-w-0 w-full max-w-full rounded-xl border border-[#eadff5] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#5f2295] focus:ring-2 focus:ring-purple-100 disabled:cursor-not-allowed disabled:opacity-60";
 
 export function RegistrationWorkflow({
   initialProfile,
@@ -48,6 +52,7 @@ export function RegistrationWorkflow({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
     setError("");
     try {
@@ -91,9 +96,9 @@ export function RegistrationWorkflow({
   }
 
   const applicationNumber = application ?? existing?.application_number;
-  if (applicationNumber)
+  if (applicationNumber) {
     return (
-      <section className="card-hover rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-7">
+      <section className="card-hover mx-auto max-w-2xl rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-7">
         <div className="flex items-center gap-3 text-[#1e8e3e]">
           <CheckCircle2 size={22} />
           <p className="text-sm font-bold">Hackathon application submitted</p>
@@ -105,6 +110,7 @@ export function RegistrationWorkflow({
           problem statements.
         </p>
         <button
+          type="button"
           onClick={() => {
             router.replace("/dashboard");
             router.refresh();
@@ -115,131 +121,148 @@ export function RegistrationWorkflow({
         </button>
       </section>
     );
+  }
 
   return (
-    <form onSubmit={submit} className="space-y-8">
-      <section className="card-hover reveal-on-scroll min-w-0 rounded-2xl border border-[#eadff5] bg-white p-5 sm:p-8">
-        <div className="mb-6">
-          <p className="eyebrow">PARTICIPANT PROFILE</p>
-          <h2 className="editorial mt-2 text-3xl">Your details</h2>
-          <p className="mt-2 text-sm text-[#76678a]">
-            Complete these details to finish your free hackathon registration.
-          </p>
-        </div>
-        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            Full name *
-            <input
-              required
-              value={profile.full_name ?? ""}
-              onChange={(e) => update("full_name", e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            Phone number *
-            <input
-              required
-              type="tel"
-              value={profile.phone ?? ""}
-              onChange={(e) => update("phone", e.target.value)}
-              className={fieldClass}
-              placeholder="+91"
-            />
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            College / Institution *
-            <input
-              required
-              value={profile.college ?? ""}
-              onChange={(e) => update("college", e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            Branch / Department *
-            <input
-              required
-              value={profile.branch ?? ""}
-              onChange={(e) => update("branch", e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            Year of study *
-            <select
-              required
-              value={profile.study_year ?? ""}
-              onChange={(e) => update("study_year", e.target.value)}
-              className={fieldClass}
+    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-10">
+      {/* Left Column: Participant Profile Form */}
+      <div id="registration-form-anchor" className="min-w-0 lg:col-span-7">
+        <form id={FORM_ID} onSubmit={submit} className="space-y-6">
+          <fieldset disabled={saving} className="min-w-0 space-y-6">
+            <section className="card-hover min-w-0 rounded-2xl border border-[#eadff5] bg-white p-5 shadow-[0_12px_36px_rgba(34,4,75,0.03)] sm:p-8">
+              <div className="mb-6">
+                <p className="eyebrow">PARTICIPANT PROFILE</p>
+                <h2 className="editorial mt-2 text-2xl sm:text-3xl">
+                  Your details
+                </h2>
+                <p className="mt-2 text-sm text-[#76678a]">
+                  Complete these details to finish your free hackathon
+                  registration. Your pass preview updates live as you type.
+                </p>
+              </div>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  Full name *
+                  <input
+                    required
+                    value={profile.full_name ?? ""}
+                    onChange={(e) => update("full_name", e.target.value)}
+                    className={fieldClass}
+                  />
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  Phone number *
+                  <input
+                    required
+                    type="tel"
+                    value={profile.phone ?? ""}
+                    onChange={(e) => update("phone", e.target.value)}
+                    className={fieldClass}
+                    placeholder="+91"
+                  />
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  College / Institution *
+                  <input
+                    required
+                    value={profile.college ?? ""}
+                    onChange={(e) => update("college", e.target.value)}
+                    className={fieldClass}
+                  />
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  Branch / Department *
+                  <input
+                    required
+                    value={profile.branch ?? ""}
+                    onChange={(e) => update("branch", e.target.value)}
+                    className={fieldClass}
+                  />
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  Year of study *
+                  <select
+                    required
+                    value={profile.study_year ?? ""}
+                    onChange={(e) => update("study_year", e.target.value)}
+                    className={fieldClass}
+                  >
+                    <option value="">Select year</option>
+                    {[
+                      "1st Year",
+                      "2nd Year",
+                      "3rd Year",
+                      "4th Year",
+                      "Postgraduate",
+                      "Other",
+                    ].map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  City
+                  <input
+                    value={profile.city ?? ""}
+                    onChange={(e) => update("city", e.target.value)}
+                    className={fieldClass}
+                  />
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  GitHub profile
+                  <input
+                    type="url"
+                    value={profile.github_url ?? ""}
+                    onChange={(e) => update("github_url", e.target.value)}
+                    className={fieldClass}
+                    placeholder="https://github.com/..."
+                  />
+                </label>
+                <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
+                  LinkedIn profile
+                  <input
+                    type="url"
+                    value={profile.linkedin_url ?? ""}
+                    onChange={(e) => update("linkedin_url", e.target.value)}
+                    className={fieldClass}
+                    placeholder="https://linkedin.com/in/..."
+                  />
+                </label>
+              </div>
+              {!profileComplete && (
+                <p className="mt-4 text-xs text-[#a16207]">
+                  Required fields: name, phone, college, branch and year of
+                  study.
+                </p>
+              )}
+            </section>
+          </fieldset>
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-xl bg-red-50 p-4 text-sm text-red-700"
             >
-              <option value="">Select year</option>
-              {[
-                "1st Year",
-                "2nd Year",
-                "3rd Year",
-                "4th Year",
-                "Postgraduate",
-                "Other",
-              ].map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            City
-            <input
-              value={profile.city ?? ""}
-              onChange={(e) => update("city", e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            GitHub profile
-            <input
-              type="url"
-              value={profile.github_url ?? ""}
-              onChange={(e) => update("github_url", e.target.value)}
-              className={fieldClass}
-              placeholder="https://github.com/..."
-            />
-          </label>
-          <label className="block min-w-0 text-xs font-semibold text-[#57436d]">
-            LinkedIn profile
-            <input
-              type="url"
-              value={profile.linkedin_url ?? ""}
-              onChange={(e) => update("linkedin_url", e.target.value)}
-              className={fieldClass}
-              placeholder="https://linkedin.com/in/..."
-            />
-          </label>
-        </div>
-        {!profileComplete && (
-          <p className="mt-4 text-xs text-[#a16207]">
-            Required fields: name, phone, college, branch and year of study.
-          </p>
-        )}
-      </section>
-      {error && (
-        <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      <button
-        type="submit"
-        disabled={saving || !profileComplete}
-        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5f2295] px-7 py-4 text-sm font-semibold text-white shadow-lg shadow-purple-900/15 transition hover:bg-[#4b1877] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {saving ? (
-          <>
-            <LoaderCircle className="animate-spin" size={17} />
-            Saving…
-          </>
-        ) : (
-          "Register"
-        )}
-      </button>
-    </form>
+              {error}
+            </p>
+          )}
+        </form>
+      </div>
+
+      {/* Right Column: Live-Updating Pass Preview + Single Submit Action */}
+      <div className="min-w-0 lg:sticky lg:top-28 lg:col-span-5">
+        <RegisterPassPreview
+          attendeeName={profile.full_name}
+          college={profile.college}
+          branch={profile.branch}
+          studyYear={profile.study_year}
+          city={profile.city}
+          applicationNumber={null}
+          formId={FORM_ID}
+        />
+      </div>
+    </div>
   );
 }
