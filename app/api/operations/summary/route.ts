@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type {
   OperationActivityItem,
@@ -6,6 +7,19 @@ import type {
 } from "@/components/admin/operations/operations-types";
 
 export const dynamic = "force-dynamic";
+
+function createServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+
+  return createSupabaseAdminClient(url, serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -28,6 +42,8 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const db = createServiceClient() ?? supabase;
+
   const [
     { data: regRows },
     { data: attendanceRows },
@@ -37,33 +53,33 @@ export async function GET() {
     { data: volunteerRows },
     { data: allProfiles },
   ] = await Promise.all([
-    supabase
+    db
       .from("registrations")
       .select("*")
       .order("created_at", { ascending: false }),
-    supabase
+    db
       .from("event_attendance")
       .select("registration_id,checked_in_at,checked_in_by"),
-    supabase
+    db
       .from("snack_distributions")
       .select("registration_id,event_day,distributed_by,created_at"),
-    supabase
+    db
       .from("event_audit_logs")
       .select("action,created_at,actor_id,registration_id,details")
       .order("created_at", { ascending: false })
       .limit(50),
-    supabase
+    db
       .from("event_schedule_settings")
       .select("snack_policy")
       .eq("id", 1)
       .maybeSingle(),
-    supabase
+    db
       .from("profiles")
       .select(
         "id,email,full_name,role,volunteer_permission,is_volunteer_active"
       )
       .in("role", ["volunteer", "admin"]),
-    supabase.from("profiles").select("id,email,full_name"),
+    db.from("profiles").select("id,email,full_name"),
   ]);
 
   const rows = (regRows ?? []) as Record<string, unknown>[];
@@ -103,17 +119,14 @@ export async function GET() {
   }
 
   const totalRegistered = confirmedRows.length;
-  const checkedIn =
-    attendanceRows && attendanceRows.length > 0
-      ? confirmedRows.filter(
-          (r) =>
-            attendanceSet.has(String(r.id ?? "")) ||
-            r.checked_in === true ||
-            Boolean(r.checked_in_at)
-        ).length
-      : confirmedRows.filter(
-          (r) => r.checked_in === true || Boolean(r.checked_in_at)
-        ).length;
+  const checkedInIds = new Set<string>(attendanceSet);
+  for (const r of confirmedRows) {
+    const rid = r.id ? String(r.id) : "";
+    if (rid && (r.checked_in === true || Boolean(r.checked_in_at))) {
+      checkedInIds.add(rid);
+    }
+  }
+  const checkedIn = checkedInIds.size;
 
   const snacksDistributed =
     snackRows && snackRows.length > 0
