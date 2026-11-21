@@ -28,6 +28,7 @@ function normalizeRow(row: Record<string, unknown>): NormalizedParticipant {
 
   const appNo = String(
     row.application_number ??
+      row.registration_code ??
       row.pass_code ??
       row.ticket_number ??
       (id ? id.slice(0, 8).toUpperCase() : "")
@@ -98,10 +99,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") ?? "").trim();
 
-  // 1. Try existing search RPC if present in Supabase
+  // 1. Try SQL search RPC if present in Supabase
   const { data: rpcRows, error: rpcError } = await supabase.rpc(
-    "search_event_participants",
-    { search_query: q }
+    "event_search_participants",
+    { p_query: q }
   );
 
   if (!rpcError && Array.isArray(rpcRows)) {
@@ -115,13 +116,29 @@ export async function GET(request: Request) {
     );
   }
 
-  // 2. Direct schema-agnostic query on registrations
-  const { data: regRows, error: regError } = await supabase
-    .from("registrations")
-    .select("*")
-    .neq("status", "cancelled")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  // 2. Direct query across registrations + profiles + event_attendance + snack_distributions
+  const [
+    { data: regRows, error: regError },
+    { data: attendanceRows },
+    { data: snackRows },
+    { data: profileRows },
+  ] = await Promise.all([
+    supabase
+      .from("registrations")
+      .select("*")
+      .neq("status", "cancelled")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("event_attendance")
+      .select("registration_id,checked_in_at"),
+    supabase
+      .from("snack_distributions")
+      .select("registration_id"),
+    supabase
+      .from("profiles")
+      .select("id,full_name,email"),
+  ]);
 
   if (regError) {
     console.error("[event-operations/participants] Query error:", regError.message);
@@ -131,9 +148,50 @@ export async function GET(request: Request) {
     );
   }
 
-  const normalized = (regRows ?? []).map((r) =>
-    normalizeRow(r as Record<string, unknown>)
-  );
+  const attendanceByRegId = new Map<string, string>();
+  for (const row of attendanceRows ?? []) {
+    const regId = String(row.registration_id ?? "");
+    if (!regId) continue;
+    if (typeof row.checked_in_at === "string" && row.checked_in_at) {
+      attendanceByRegId.set(regId, row.checked_in_at);
+    }
+  }
+
+  const snackCountByRegId = new Map<string, number>();
+  for (const row of snackRows ?? []) {
+    const regId = String(row.registration_id ?? "");
+    if (!regId) continue;
+    snackCountByRegId.set(regId, (snackCountByRegId.get(regId) ?? 0) + 1);
+  }
+
+  const profileByUserId = new Map<
+    string,
+    { full_name: string | null; email: string | null }
+  >();
+  for (const p of profileRows ?? []) {
+    profileByUserId.set(String(p.id), {
+      full_name: typeof p.full_name === "string" ? p.full_name : null,
+      email: typeof p.email === "string" ? p.email : null,
+    });
+  }
+
+  const normalized = (regRows ?? []).map((raw) => {
+    const row = raw as Record<string, unknown>;
+    const regId = String(row.id ?? row.registration_id ?? "");
+    const ownerId = String(row.created_by ?? row.user_id ?? "");
+    const ownerProfile = ownerId ? profileByUserId.get(ownerId) : undefined;
+
+    return normalizeRow({
+      ...row,
+      registration_id: regId,
+      full_name: row.full_name ?? row.name ?? ownerProfile?.full_name ?? null,
+      email: row.email ?? ownerProfile?.email ?? null,
+      checked_in_at:
+        attendanceByRegId.get(regId) ??
+        (typeof row.checked_in_at === "string" ? row.checked_in_at : null),
+      snack_claims: snackCountByRegId.get(regId) ?? 0,
+    });
+  });
 
   const needle = q.toLowerCase();
   const filtered = needle

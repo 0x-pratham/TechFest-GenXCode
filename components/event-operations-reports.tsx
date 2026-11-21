@@ -31,6 +31,9 @@ interface EventOperationsReportsProps {
   intervalMs?: number;
 }
 
+const SCAN_SYNC_STORAGE_KEY = "gxc_last_scan_at";
+export const SCAN_COMPLETED_EVENT = "gxc:scan-completed";
+
 function formatAttendanceTime(value: string | null): string {
   if (!value) return "Awaiting entry";
   const parsed = new Date(value);
@@ -100,28 +103,48 @@ export function EventOperationsReports({
           )}`,
           {
             cache: "no-store",
+            credentials: "include",
             signal: controller.signal,
           }
         );
 
-        const data = await response.json();
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-          throw new Error(data.error || "Could not load participant records.");
+          throw new Error(
+            (data && typeof data.error === "string" && data.error) ||
+              "Could not load participant records."
+          );
         }
 
-        setParticipants(
-          Array.isArray(data.participants) ? data.participants : []
-        );
+        const list: ParticipantRecord[] = Array.isArray(data?.participants)
+          ? data.participants.map((row: Record<string, unknown>) => ({
+              registration_id: String(row.registration_id ?? ""),
+              participant_name: String(row.participant_name ?? ""),
+              application_number: String(row.application_number ?? ""),
+              participant_email: String(row.participant_email ?? ""),
+              checked_in_at:
+                typeof row.checked_in_at === "string"
+                  ? row.checked_in_at
+                  : null,
+              snack_claims: Number.isFinite(Number(row.snack_claims))
+                ? Number(row.snack_claims)
+                : 0,
+            }))
+          : [];
+
+        setParticipants(list);
         setHasLoadedOnce(true);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Could not load participant records."
-        );
+        if (!silent) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not load participant records."
+          );
+        }
       } finally {
         if (abortRef.current === controller) {
           setIsSearching(false);
@@ -143,6 +166,7 @@ export function EventOperationsReports({
     try {
       const response = await fetch("/api/event-operations/export", {
         cache: "no-store",
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -151,7 +175,6 @@ export function EventOperationsReports({
         return;
       }
 
-      // Fallback: export currently loaded register cleanly if server export route errors
       if (participants.length > 0) {
         const header = [
           "Application Number",
@@ -208,7 +231,28 @@ export function EventOperationsReports({
     return () => window.clearTimeout(timer);
   }, [query, fetchParticipants]);
 
-  // Silent background refresh every 10s while tab is visible
+  // Immediate sync when a scan occurs in this tab or another tab
+  useEffect(() => {
+    const onScanEvent = () => {
+      void fetchParticipants(latestQueryRef.current, true);
+    };
+
+    const onStorageChange = (event: StorageEvent) => {
+      if (event.key === SCAN_SYNC_STORAGE_KEY) {
+        void fetchParticipants(latestQueryRef.current, true);
+      }
+    };
+
+    window.addEventListener(SCAN_COMPLETED_EVENT, onScanEvent);
+    window.addEventListener("storage", onStorageChange);
+
+    return () => {
+      window.removeEventListener(SCAN_COMPLETED_EVENT, onScanEvent);
+      window.removeEventListener("storage", onStorageChange);
+    };
+  }, [fetchParticipants]);
+
+  // Silent background refresh while tab is visible
   useEffect(() => {
     const pollTimer = window.setInterval(() => {
       if (document.visibilityState === "visible") {

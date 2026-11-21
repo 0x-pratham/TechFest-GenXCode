@@ -61,6 +61,17 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
       });
       const data = await response.json() as ScanResult;
       setResult(response.ok ? data : { result: "error", error: data.error || "Unable to process this pass." });
+      if (
+        response.ok &&
+        (data.result === "checked_in" || data.result === "snack_distributed")
+      ) {
+        try {
+          window.localStorage.setItem("gxc_last_scan_at", String(Date.now()));
+        } catch {
+          // Ignore storage quota/private-mode errors
+        }
+        window.dispatchEvent(new CustomEvent("gxc:scan-completed", { detail: data }));
+      }
       if (response.ok && ["checked_in", "snack_distributed", "already_checked_in", "already_distributed", "invalid"].includes(data.result)) {
         stopCamera();
       }
