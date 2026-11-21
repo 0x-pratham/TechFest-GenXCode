@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { EventOperationsScanner } from "@/components/event-operations-scanner";
 import { EventOperationsReports } from "@/components/event-operations-reports";
+import { VolunteerLiveRefresh } from "@/components/volunteer/volunteer-live-refresh";
 import { formatStaffIdentifier } from "@/lib/format-staff-identifier";
 import { getCachedScheduleSettings } from "@/lib/cache/event-data";
 
@@ -69,19 +70,23 @@ export default async function VolunteerDashboardPage() {
 
   return (
     <main className="min-h-screen bg-[#f9f6f1] text-[#1b053e]">
+      <VolunteerLiveRefresh />
+
       <Navbar>
-        <form action={signOut}>
-          <PendingSubmitButton
-            pendingLabel="Signing out…"
-            className="group/signout !transition-colors !duration-100 hover:!border-[#f5c2c7] hover:!from-[#fff8f8] hover:!via-[#fff1f2] hover:!to-[#ffe4e6] hover:!text-[#be123c] hover:!shadow-[0_4px_14px_rgba(225,29,72,0.12)] active:!scale-[0.98] active:!border-[#fda4af] active:!from-[#fff1f2] active:!via-[#ffe4e6] active:!to-[#fecdd3] active:!text-[#9f1239]"
-          >
-            <LogOut
-              size={14}
-              className="text-[#6828a2] transition-colors duration-100 group-hover/signout:text-[#e11d48] group-active/signout:text-[#be123c]"
-            />
-            <span>Sign out</span>
-          </PendingSubmitButton>
-        </form>
+        <div className="flex items-center gap-2">
+          <form action={signOut}>
+            <PendingSubmitButton
+              pendingLabel="Signing out…"
+              className="group/signout !px-3 !py-1.5 !text-xs !transition-colors !duration-100 hover:!border-[#f5c2c7] hover:!from-[#fff8f8] hover:!via-[#fff1f2] hover:!to-[#ffe4e6] hover:!text-[#be123c] hover:!shadow-[0_4px_14px_rgba(225,29,72,0.12)] active:!scale-[0.98] active:!border-[#fda4af] active:!from-[#fff1f2] active:!via-[#ffe4e6] active:!to-[#fecdd3] active:!text-[#9f1239]"
+            >
+              <LogOut
+                size={14}
+                className="text-[#6828a2] transition-colors duration-100 group-hover/signout:text-[#e11d48] group-active/signout:text-[#be123c]"
+              />
+              <span>Sign out</span>
+            </PendingSubmitButton>
+          </form>
+        </div>
       </Navbar>
 
       <div className="container-shell max-w-5xl pb-20 pt-24 sm:pt-28">
