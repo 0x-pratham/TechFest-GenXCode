@@ -24,7 +24,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   closed: "The submission window is currently closed.",
   registration: "A confirmed registration is required before submitting.",
   validation: "Please fill in all required fields and use valid HTTPS URLs.",
-  file: "Please upload a .ppt or .pptx file up to 15 MB.",
+  file: "Please upload a .ppt or .pptx file up to 2.5 MB.",
   upload: "Could not upload your presentation deck. Please try again.",
   save: "Could not save your submission. Please try again.",
 };
@@ -227,7 +227,7 @@ export default async function ProjectSubmissionPage({
 
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#524661] sm:text-[15px]">
             Submit your GitHub repository, live deployment, and presentation
-            deck for evaluation.
+            deck (up to 2.5 MB) for evaluation.
           </p>
         </header>
 

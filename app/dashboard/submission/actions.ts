@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const MAX_FILE_BYTES = 2.5 * 1024 * 1024; // 2.5 MB (2,621,440 bytes)
 const ALLOWED_EXTENSIONS = [".ppt", ".pptx"];
 
 export async function saveProjectSubmission(formData: FormData) {
