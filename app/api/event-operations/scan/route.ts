@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+const ALLOWED_ACTIONS = new Set(["checkin", "snack", "tea", "water"]);
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
@@ -10,14 +12,19 @@ export async function POST(req: Request) {
     };
 
     const token = typeof body.token === "string" ? body.token.trim() : "";
-    const action = body.action === "snack" ? "snack" : "checkin";
+    const rawAction =
+      typeof body.action === "string" ? body.action.trim().toLowerCase() : "";
+    const action = ALLOWED_ACTIONS.has(rawAction) ? rawAction : "checkin";
     const eventDay = Number.isInteger(Number(body.eventDay))
       ? Math.max(1, Number(body.eventDay))
       : 1;
 
     if (!token) {
       return NextResponse.json(
-        { result: "error", error: "Please scan a QR code or enter a pass token." },
+        {
+          result: "error",
+          error: "Please scan a QR code or enter a pass token.",
+        },
         { status: 400 }
       );
     }
@@ -43,7 +50,10 @@ export async function POST(req: Request) {
 
     if (error) {
       return NextResponse.json(
-        { result: "error", error: error.message || "Scan verification failed." },
+        {
+          result: "error",
+          error: error.message || "Scan verification failed.",
+        },
         { status: 403 }
       );
     }
