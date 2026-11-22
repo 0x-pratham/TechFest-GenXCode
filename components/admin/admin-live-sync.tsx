@@ -23,7 +23,7 @@ export function AdminLiveSync({ intervalMs = 15000 }: AdminLiveSyncProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasQueuedUpdate, setHasQueuedUpdate] = useState(false);
   const [lastSyncedLabel, setLastSyncedLabel] = useState<string>("Just now");
-  const lastSyncTimeRef = useRef<number>(Date.now());
+  const lastSyncTimeRef = useRef<number | null>(null);
 
   const triggerRefresh = useCallback(
     (force = false) => {
@@ -61,6 +61,10 @@ export function AdminLiveSync({ intervalMs = 15000 }: AdminLiveSyncProps) {
 
   // Supabase Realtime channel + periodic window fallback
   useEffect(() => {
+    if (lastSyncTimeRef.current === null) {
+      lastSyncTimeRef.current = Date.now();
+    }
+
     const supabase = createClient();
 
     const channel = supabase
@@ -91,9 +95,10 @@ export function AdminLiveSync({ intervalMs = 15000 }: AdminLiveSyncProps) {
 
     // Human-readable relative timestamp ticker
     const ageInterval = window.setInterval(() => {
-      const elapsedSec = Math.floor(
-        (Date.now() - lastSyncTimeRef.current) / 1000
-      );
+      const lastSync = lastSyncTimeRef.current;
+      if (lastSync === null) return;
+
+      const elapsedSec = Math.floor((Date.now() - lastSync) / 1000);
       if (elapsedSec < 5) {
         setLastSyncedLabel("Just now");
       } else if (elapsedSec < 60) {
@@ -105,9 +110,10 @@ export function AdminLiveSync({ intervalMs = 15000 }: AdminLiveSyncProps) {
 
     // Sync immediately when returning to the tab
     const handleVisibility = () => {
+      const lastSync = lastSyncTimeRef.current;
       if (
         document.visibilityState === "visible" &&
-        Date.now() - lastSyncTimeRef.current >= intervalMs
+        (lastSync === null || Date.now() - lastSync >= intervalMs)
       ) {
         triggerRefresh(false);
       }

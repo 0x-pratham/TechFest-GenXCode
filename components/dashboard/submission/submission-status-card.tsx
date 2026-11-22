@@ -35,13 +35,10 @@ export function SubmissionStatusCard({
   submission,
   problemTitle,
 }: SubmissionStatusCardProps) {
-  const [liveStatus, setLiveStatus] = useState(submission.status || "pending");
-  const [submittedAt, setSubmittedAt] = useState(submission.submitted_at);
-
-  useEffect(() => {
-    setLiveStatus(submission.status || "pending");
-    setSubmittedAt(submission.submitted_at);
-  }, [submission.status, submission.submitted_at]);
+  const [realtimePatch, setRealtimePatch] = useState<{
+    status?: string;
+    submitted_at?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -57,10 +54,13 @@ export function SubmissionStatusCard({
         },
         (payload) => {
           const next = payload.new as Partial<ParticipantSubmissionRecord>;
-          if (typeof next.status === "string") setLiveStatus(next.status);
-          if (typeof next.submitted_at === "string") {
-            setSubmittedAt(next.submitted_at);
-          }
+          setRealtimePatch({
+            status: typeof next.status === "string" ? next.status : undefined,
+            submitted_at:
+              typeof next.submitted_at === "string"
+                ? next.submitted_at
+                : undefined,
+          });
         }
       )
       .subscribe();
@@ -69,6 +69,12 @@ export function SubmissionStatusCard({
       supabase.removeChannel(channel);
     };
   }, [submission.id]);
+
+  const liveStatus = realtimePatch?.status ?? (submission.status || "pending");
+  const submittedAt =
+    realtimePatch?.submitted_at !== undefined
+      ? realtimePatch.submitted_at
+      : submission.submitted_at;
 
   const meta =
     SUBMISSION_STATUS_META[liveStatus] ?? SUBMISSION_STATUS_META.pending;

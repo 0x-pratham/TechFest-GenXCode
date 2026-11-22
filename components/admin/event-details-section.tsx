@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -67,11 +67,14 @@ export function EventDetailsSection({
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [isAdding, startAddTransition] = useTransition();
 
-  useEffect(() => {
-    if (Number(composerDay) > dayCount) {
-      setComposerDay(String(Math.max(1, dayCount)));
-    }
-  }, [dayCount, composerDay]);
+  const maxAllowedDay = Math.max(1, dayCount);
+  const parsedDay = Number.parseInt(composerDay, 10);
+  const resolvedComposerDay = String(
+    Math.min(
+      maxAllowedDay,
+      Math.max(1, Number.isFinite(parsedDay) ? parsedDay : 1)
+    )
+  );
 
   const publishedCount = events.filter((e) => e.is_published).length;
   const draftCount = events.length - publishedCount;
@@ -105,7 +108,7 @@ export function EventDetailsSection({
 
     setComposerFeedback(null);
     const formData = new FormData();
-    formData.set("day_number", composerDay);
+    formData.set("day_number", resolvedComposerDay);
     formData.set("title", cleanTitle);
     formData.set("venue", composerVenue.trim());
     formData.set("timing", composerTiming.trim());
@@ -123,7 +126,7 @@ export function EventDetailsSection({
         setComposerNotes("");
         setComposerFeedback({
           type: "success",
-          text: `"${cleanTitle}" added to Day ${composerDay}.`,
+          text: `"${cleanTitle}" added to Day ${resolvedComposerDay}.`,
         });
         router.refresh();
       } catch (err) {
@@ -134,7 +137,7 @@ export function EventDetailsSection({
           setComposerNotes("");
           setComposerFeedback({
             type: "success",
-            text: `"${cleanTitle}" added to Day ${composerDay}.`,
+            text: `"${cleanTitle}" added to Day ${resolvedComposerDay}.`,
           });
           router.refresh();
           return;
@@ -149,7 +152,6 @@ export function EventDetailsSection({
 
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-[#e3dbd0] bg-white shadow-[0_10px_32px_rgba(27,5,62,0.03)]">
-      {/* Top Editorial Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#ebe4dc] bg-[#fdfcfa] px-5 py-6 sm:px-8 sm:py-7">
         <div>
           <p className="editorial text-[15px] italic text-[#6828a2]">
@@ -171,7 +173,6 @@ export function EventDetailsSection({
       </div>
 
       <div className="p-5 sm:p-8">
-        {/* New Session Composer */}
         <div className="rounded-xl border border-[#e6ddf2] bg-[#faf7ff] p-4 sm:p-6">
           <div className="mb-4 flex items-baseline justify-between border-b border-[#ebe1f7] pb-3">
             <div>
@@ -194,12 +195,12 @@ export function EventDetailsSection({
                 <select
                   name="day_number"
                   required
-                  value={composerDay}
+                  value={resolvedComposerDay}
                   onChange={(e) => setComposerDay(e.target.value)}
                   disabled={isAdding}
                   className={ADMIN_FIELD_CLASS}
                 >
-                  {DAY_OPTIONS.slice(0, Math.max(1, dayCount)).map((day) => (
+                  {DAY_OPTIONS.slice(0, maxAllowedDay).map((day) => (
                     <option key={day} value={day}>
                       Day {day}
                     </option>
@@ -313,7 +314,6 @@ export function EventDetailsSection({
           </form>
         </div>
 
-        {/* Grouped Day Lineups */}
         {groupedByDay.length === 0 ? (
           <div className="mt-8 rounded-xl border border-dashed border-[#dcd0ec] bg-[#fcfaff] p-8 text-center">
             <p className="editorial text-lg font-bold text-[#1b053e]">
@@ -475,7 +475,6 @@ function SessionRowCard({
           : "border-[#e6ddf2] hover:border-[#cdb0ef]"
       }`}
     >
-      {/* Compact Clickable Summary Header */}
       <div
         onClick={onToggle}
         role="button"
@@ -535,7 +534,6 @@ function SessionRowCard({
         </div>
       </div>
 
-      {/* Expandable Inline Editor */}
       {isExpanded && (
         <div className="border-t border-[#f0e8f8] bg-[#fdfcff] p-4 sm:p-6">
           <form onSubmit={handleSave} className="space-y-4">

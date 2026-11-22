@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -66,18 +66,16 @@ export function DashboardUpdates({
   );
 
   const [activeDay, setActiveDay] = useState<number>(availableDays[0] ?? 1);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    selectedProblemStatementId
-  );
+  const [optimisticSelectedId, setOptimisticSelectedId] = useState<
+    string | null
+  >(null);
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
-  useEffect(() => {
-    setSelectedId(selectedProblemStatementId);
-  }, [selectedProblemStatementId]);
+  const selectedId = optimisticSelectedId ?? selectedProblemStatementId;
 
   const resolvedActiveDay = availableDays.includes(activeDay)
     ? activeDay
@@ -110,7 +108,7 @@ export function DashboardUpdates({
         return;
       }
 
-      setSelectedId(problemId);
+      setOptimisticSelectedId(problemId);
       setFeedback({
         type: "success",
         message: "Problem statement updated on your builder pass.",
@@ -129,11 +127,7 @@ export function DashboardUpdates({
 
   return (
     <div className="space-y-10">
-      {/* =====================================================================
-          SECTION A: ENGINEERED EVENT SCHEDULE TIMELINE
-      ===================================================================== */}
       <section className="overflow-hidden rounded-[1.5rem] border border-[#eadff5] bg-white shadow-[0_12px_36px_rgba(34,4,75,0.04)]">
-        {/* Header + Day Switcher */}
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#f0e8f8] bg-gradient-to-r from-white via-[#fdfbff] to-[#f8f3ff] p-6 sm:p-8">
           <div>
             <p className="editorial text-[16px] italic text-[#5f2295]">
@@ -193,7 +187,6 @@ export function DashboardUpdates({
           )}
         </div>
 
-        {/* Timeline Body */}
         <div className="p-6 sm:p-8">
           {activeDayEvents.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#dfd2ef] bg-[#fcfaff] p-8 text-center">
@@ -227,7 +220,6 @@ export function DashboardUpdates({
 
                   return (
                     <li key={session.id} className="relative pl-10 sm:pl-12">
-                      {/* Timeline Node Marker */}
                       <span
                         aria-hidden="true"
                         className={`absolute left-0 top-5 flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-bold shadow-2xs sm:h-10 sm:w-10 sm:text-xs ${
@@ -239,14 +231,12 @@ export function DashboardUpdates({
                         {String(index + 1).padStart(2, "0")}
                       </span>
 
-                      {/* Session Card */}
                       <div className="rounded-2xl border border-[#e7dcf3] bg-white p-5 shadow-[0_4px_16px_rgba(34,4,75,0.03)] transition-all duration-150 hover:border-[#c7a6f3] hover:shadow-[0_8px_24px_rgba(34,4,75,0.06)]">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <h3 className="editorial break-words text-lg font-bold leading-snug text-[#220749] sm:text-xl">
                             {session.title}
                           </h3>
 
-                          {/* Metadata Chips: Timing & Venue */}
                           {(hasTiming || hasVenue) && (
                             <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
                               {hasTiming && (
@@ -266,7 +256,6 @@ export function DashboardUpdates({
                           )}
                         </div>
 
-                        {/* Pre-session Builder Note */}
                         {hasInstructions && (
                           <div className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-[#e6dfd4] bg-[#faf7f2] px-3.5 py-2.5 text-[13.5px] leading-relaxed text-[#3d3630]">
                             <FileText
@@ -288,9 +277,6 @@ export function DashboardUpdates({
         </div>
       </section>
 
-      {/* =====================================================================
-          SECTION B: HACKATHON PROBLEM STATEMENTS
-      ===================================================================== */}
       <section className="rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.04)] sm:p-8">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#f0e8f8] pb-5">
           <div>

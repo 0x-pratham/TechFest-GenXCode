@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -8,6 +9,7 @@ import {
   LogOut,
   SlidersHorizontal,
 } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/dashboard/actions";
 import { Navbar } from "@/components/navbar";
@@ -52,17 +54,21 @@ export default async function AdminPage({
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const supabase = await createClient();
+
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
-  if (error || !user) redirect("/auth?next=/admin");
+
+  // Redirect unauthenticated users to the dedicated admin login page.
+  if (error || !user) redirect("/admin/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("role,full_name")
     .eq("id", user.id)
     .maybeSingle();
+
   if (profile?.role !== "admin") redirect("/");
 
   const [
@@ -76,6 +82,7 @@ export default async function AdminPage({
       .select("day_count,whatsapp_channel_url")
       .eq("id", 1)
       .maybeSingle(),
+
     supabase
       .from("event_details")
       .select(
@@ -83,20 +90,29 @@ export default async function AdminPage({
       )
       .order("day_number")
       .order("created_at"),
+
     supabase
       .from("problem_statements")
       .select(
         "id,title,summary,domain,difficulty,max_slots,filled_slots,display_order,is_active,name,email,phone"
       )
       .order("display_order"),
+
     searchParams,
   ]);
 
   const dayCount = scheduleSettings?.day_count ?? 1;
   const sessionList = events ?? [];
   const problemList = problems ?? [];
-  const liveSessionsCount = sessionList.filter((e) => e.is_published).length;
-  const activeTracksCount = problemList.filter((p) => p.is_active).length;
+
+  const liveSessionsCount = sessionList.filter(
+    (e) => e.is_published
+  ).length;
+
+  const activeTracksCount = problemList.filter(
+    (p) => p.is_active
+  ).length;
+
   const maxOccupiedDay = sessionList.reduce(
     (max, item) => Math.max(max, item.day_number || 1),
     1
@@ -104,6 +120,7 @@ export default async function AdminPage({
 
   const firstName =
     profile?.full_name?.trim().split(/\s+/)[0] || "Organizer";
+
   const staffCode = formatStaffIdentifier(profile?.full_name);
 
   const signOutControl = (
@@ -165,6 +182,7 @@ export default async function AdminPage({
             <p className="editorial text-[15px] italic text-[#6828a2] sm:text-[16px]">
               Take Off With GenXCode
             </p>
+
             <p className="font-mono text-[11px] text-[#5e536b] sm:text-[11.5px]">
               Signed in as {firstName} · {staffCode}
             </p>
@@ -217,7 +235,9 @@ export default async function AdminPage({
             className="mt-6 flex items-center gap-2.5 rounded-xl border border-[#bfe6c9] bg-[#eefaf1] px-4 py-3 text-xs font-semibold text-[#1b7a37] sm:text-sm"
           >
             <CheckCircle2 size={16} className="shrink-0" />
-            <span>{SAVED_MESSAGES[params.saved] ?? "Changes saved."}</span>
+            <span>
+              {SAVED_MESSAGES[params.saved] ?? "Changes saved."}
+            </span>
           </div>
         )}
 
@@ -239,7 +259,9 @@ export default async function AdminPage({
           <ScheduleSettingsSection
             key={`schedule-${dayCount}-${scheduleSettings?.whatsapp_channel_url ?? ""}`}
             dayCount={dayCount}
-            whatsappChannelUrl={scheduleSettings?.whatsapp_channel_url ?? null}
+            whatsappChannelUrl={
+              scheduleSettings?.whatsapp_channel_url ?? null
+            }
             maxOccupiedDay={maxOccupiedDay}
           />
 

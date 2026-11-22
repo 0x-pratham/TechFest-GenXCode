@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   AlertCircle,
   CalendarDays,
@@ -37,10 +37,8 @@ export function ScheduleSettingsSection({
   whatsappChannelUrl,
   maxOccupiedDay = 1,
 }: ScheduleSettingsSectionProps) {
-  const [selectedDays, setSelectedDays] = useState<number>(dayCount);
-  const [channelInput, setChannelInput] = useState<string>(
-    whatsappChannelUrl ?? ""
-  );
+  const [draftDays, setDraftDays] = useState<number | null>(null);
+  const [draftChannel, setDraftChannel] = useState<string | null>(null);
 
   const [daysFeedback, setDaysFeedback] = useState<{
     type: "success" | "error";
@@ -54,14 +52,8 @@ export function ScheduleSettingsSection({
   const [isSavingDays, startDaysTransition] = useTransition();
   const [isSavingChannel, startChannelTransition] = useTransition();
 
-  // Keep local state synchronized if another organizer updates via live sync
-  useEffect(() => {
-    setSelectedDays(dayCount);
-  }, [dayCount]);
-
-  useEffect(() => {
-    setChannelInput(whatsappChannelUrl ?? "");
-  }, [whatsappChannelUrl]);
+  const selectedDays = draftDays ?? dayCount;
+  const channelInput = draftChannel ?? (whatsappChannelUrl ?? "");
 
   const effectiveMinDays = Math.max(1, maxOccupiedDay);
   const isDaysDirty = selectedDays !== dayCount;
@@ -87,6 +79,7 @@ export function ScheduleSettingsSection({
     startDaysTransition(async () => {
       try {
         await saveEventDayCount(formData);
+        setDraftDays(null);
         setDaysFeedback({
           type: "success",
           text: `Schedule updated to ${selectedDays} ${selectedDays === 1 ? "day" : "days"}.`,
@@ -118,7 +111,7 @@ export function ScheduleSettingsSection({
     startChannelTransition(async () => {
       try {
         await saveWhatsappChannelLink(formData);
-        setChannelInput(nextUrl);
+        setDraftChannel(null);
         setChannelFeedback({
           type: "success",
           text:
@@ -142,7 +135,6 @@ export function ScheduleSettingsSection({
 
   return (
     <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {/* 1. Event Duration Card */}
       <section className="flex flex-col justify-between rounded-2xl border border-[#e5dce0] bg-white p-5 shadow-[0_8px_28px_rgba(27,5,62,0.03)] sm:p-7">
         <div>
           <div className="mb-5 flex items-start justify-between gap-3">
@@ -182,7 +174,7 @@ export function ScheduleSettingsSection({
                 name="day_count"
                 value={String(selectedDays)}
                 onChange={(e) => {
-                  setSelectedDays(Number(e.target.value));
+                  setDraftDays(Number(e.target.value));
                   setDaysFeedback(null);
                 }}
                 disabled={isSavingDays}
@@ -239,7 +231,6 @@ export function ScheduleSettingsSection({
         </div>
       </section>
 
-      {/* 2. WhatsApp Channel Card */}
       <section className="flex flex-col justify-between rounded-2xl border border-[#e5dce0] bg-white p-5 shadow-[0_8px_28px_rgba(27,5,62,0.03)] sm:p-7">
         <div>
           <div className="mb-5 flex items-start justify-between gap-3">
@@ -291,7 +282,7 @@ export function ScheduleSettingsSection({
                   type="url"
                   value={channelInput}
                   onChange={(e) => {
-                    setChannelInput(e.target.value);
+                    setDraftChannel(e.target.value);
                     setChannelFeedback(null);
                   }}
                   disabled={isSavingChannel}
@@ -305,7 +296,7 @@ export function ScheduleSettingsSection({
                   <button
                     type="button"
                     onClick={() => {
-                      setChannelInput("");
+                      setDraftChannel("");
                       if (whatsappChannelUrl) {
                         submitChannelValue("");
                       } else {

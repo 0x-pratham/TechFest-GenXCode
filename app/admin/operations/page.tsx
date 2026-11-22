@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -8,11 +9,13 @@ import {
   LayoutDashboard,
   LogOut,
 } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/dashboard/actions";
 import { Navbar } from "@/components/navbar";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { formatStaffIdentifier } from "@/lib/format-staff-identifier";
+
 import { OperationsLiveWorkspace } from "@/components/admin/operations/operations-live-workspace";
 import type { OperationsSummary } from "@/components/admin/operations/operations-types";
 
@@ -35,11 +38,13 @@ export default async function OperationsAdminPage({
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const supabase = await createClient();
+
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
-  if (error || !user) redirect("/auth?next=/admin/operations");
+
+  if (error || !user) redirect("/admin/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -47,6 +52,7 @@ export default async function OperationsAdminPage({
     .eq("id", user.id)
     .maybeSingle();
 
+  // Verify admin access before fetching operations data.
   if (profile?.role !== "admin") redirect("/");
 
   let initialSummary: OperationsSummary = {
@@ -65,11 +71,13 @@ export default async function OperationsAdminPage({
         .from("registrations")
         .select("*")
         .order("created_at", { ascending: false }),
+
       supabase
         .from("event_schedule_settings")
         .select("snack_policy")
         .eq("id", 1)
         .maybeSingle(),
+
       supabase
         .from("profiles")
         .select(
@@ -77,13 +85,18 @@ export default async function OperationsAdminPage({
         )
         .in("role", ["volunteer", "admin"]),
     ]).catch((err) => {
-      console.error("[OperationsAdminPage] Initial data load warning:", err);
+      console.error(
+        "[OperationsAdminPage] Initial data load warning:",
+        err
+      );
+
       return [
         { data: null },
         { data: null },
         { data: null },
       ] as const;
     }),
+
     searchParams,
   ]);
 
@@ -92,6 +105,7 @@ export default async function OperationsAdminPage({
 
   if (regRows || settings || volunteerRows) {
     const rows = (regRows ?? []) as Record<string, unknown>[];
+
     const confirmedRows = rows.filter(
       (r) =>
         r.status === undefined ||
@@ -101,9 +115,11 @@ export default async function OperationsAdminPage({
     );
 
     const totalRegistered = confirmedRows.length;
+
     const checkedIn = confirmedRows.filter(
       (r) => r.checked_in === true || Boolean(r.checked_in_at)
     ).length;
+
     const snacksDistributed = confirmedRows.reduce((sum, r) => {
       const count = Number(
         r.snack_claims ??
@@ -111,6 +127,7 @@ export default async function OperationsAdminPage({
           r.snack_count ??
           (r.snack_claimed === true ? 1 : 0)
       );
+
       return sum + (Number.isFinite(count) ? count : 0);
     }, 0);
 
@@ -120,6 +137,7 @@ export default async function OperationsAdminPage({
       snacks_distributed: snacksDistributed,
       pending_checkin: Math.max(0, totalRegistered - checkedIn),
       snack_policy: settings?.snack_policy ?? "event",
+
       volunteers: (volunteerRows ?? [])
         .filter(
           (v) => v.role === "volunteer" || Boolean(v.volunteer_permission)
@@ -131,19 +149,23 @@ export default async function OperationsAdminPage({
           permission: String(v.volunteer_permission ?? "both"),
           is_active: v.is_volunteer_active !== false,
         })),
+
       recent_activity: confirmedRows
         .filter((r) => Boolean(r.checked_in_at))
         .slice(0, 50)
         .map((r) => ({
           action: "participant_checked_in",
           created_at: String(r.checked_in_at),
+
           email:
             typeof r.participant_email === "string"
               ? r.participant_email
               : typeof r.email === "string"
                 ? r.email
                 : null,
+
           registration_id: r.id ? String(r.id) : null,
+
           details: {
             participant_name:
               r.participant_name ?? r.full_name ?? r.name ?? null,
@@ -155,6 +177,7 @@ export default async function OperationsAdminPage({
 
   const firstName =
     profile?.full_name?.trim().split(/\s+/)[0] || "Organizer";
+
   const staffCode = formatStaffIdentifier(profile?.full_name);
 
   return (
@@ -197,6 +220,7 @@ export default async function OperationsAdminPage({
             <p className="editorial text-[15px] italic text-[#6828a2] sm:text-[16px]">
               Take Off With GenXCode
             </p>
+
             <p className="font-mono text-[11px] text-[#5e536b] sm:text-[11.5px]">
               Signed in as {firstName} · {staffCode}
             </p>

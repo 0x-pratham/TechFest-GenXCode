@@ -53,6 +53,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   review: "Could not save the project review. Check the score and retry.",
 };
 
+function isSubmissionWindowOpen(
+  isOpenFlag: boolean | null | undefined,
+  closesAtIso: string | null | undefined
+): boolean {
+  if (!isOpenFlag) return false;
+  if (!closesAtIso) return true;
+  const closesAtMs = new Date(closesAtIso).getTime();
+  if (Number.isNaN(closesAtMs)) return true;
+  return closesAtMs > Date.now();
+}
+
 function formatIstInputValue(iso: string | null | undefined): string {
   if (!iso) return "";
   const parsed = new Date(iso);
@@ -88,7 +99,7 @@ export default async function AdminSubmissionsPage({
     data: { user },
     error,
   } = await supabase.auth.getUser();
-  if (error || !user) redirect("/auth?next=/admin/submissions");
+  if (error || !user) redirect("/admin/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -150,12 +161,9 @@ export default async function AdminSubmissionsPage({
   const problemMap = new Map((problems ?? []).map((p) => [p.id, p]));
 
   const closeValue = formatIstInputValue(windowSettings?.closes_at);
-  const closesAtMs = windowSettings?.closes_at
-    ? new Date(windowSettings.closes_at).getTime()
-    : null;
-  const effectiveOpen = Boolean(
-    windowSettings?.is_open &&
-      (!closesAtMs || Number.isNaN(closesAtMs) || closesAtMs > Date.now())
+  const effectiveOpen = isSubmissionWindowOpen(
+    windowSettings?.is_open,
+    windowSettings?.closes_at
   );
 
   const counts = {
@@ -173,7 +181,6 @@ export default async function AdminSubmissionsPage({
 
   return (
     <main className="min-h-screen bg-[#f9f6f1] text-[#1b053e]">
-      {/* Universal Floating Navbar (No Subnav) */}
       <Navbar>
         <Link href="/admin">
           <CalendarCog size={14} className="text-[#6828a2]" />
@@ -205,7 +212,6 @@ export default async function AdminSubmissionsPage({
       </Navbar>
 
       <div className="container-shell pb-20 pt-24 sm:pt-32">
-        {/* Warm Editorial Header */}
         <header className="border-b border-[#e8e0d8] pb-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-[#6d627a]">
             <p className="editorial text-[15px] italic text-[#6828a2] sm:text-[16px]">
@@ -225,7 +231,6 @@ export default async function AdminSubmissionsPage({
             decks, and score solo hackathon projects.
           </p>
 
-          {/* Compact KPI Strip */}
           <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             <div className="rounded-2xl border border-[#e3dbd0] bg-white p-4 shadow-[0_6px_22px_rgba(27,5,62,0.025)]">
               <dt className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#6d627a]">
@@ -265,7 +270,6 @@ export default async function AdminSubmissionsPage({
           </dl>
         </header>
 
-        {/* Feedback Banners */}
         {params.saved && (
           <div
             role="status"
@@ -291,7 +295,6 @@ export default async function AdminSubmissionsPage({
           </div>
         )}
 
-        {/* Submission Window Control Card */}
         <section className="mt-8 overflow-hidden rounded-2xl border border-[#e3dbd0] bg-white shadow-[0_8px_28px_rgba(27,5,62,0.03)]">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#ebe4dc] bg-[#fdfcfa] px-5 py-5 sm:px-7">
             <div className="flex items-center gap-3.5">
@@ -371,7 +374,6 @@ export default async function AdminSubmissionsPage({
           </div>
         </section>
 
-        {/* Project Submissions List */}
         <section className="mt-8 space-y-5">
           {rows.map((s, index) => {
             const reg = registrationMap.get(s.registration_id);
@@ -389,7 +391,6 @@ export default async function AdminSubmissionsPage({
                 className="min-w-0 overflow-hidden rounded-2xl border border-[#e3dbd0] bg-white shadow-[0_8px_28px_rgba(27,5,62,0.03)]"
               >
                 <div className="p-5 sm:p-7">
-                  {/* Top Row: Participant & Status */}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-[#6d627a]">
@@ -421,7 +422,6 @@ export default async function AdminSubmissionsPage({
                     </span>
                   </div>
 
-                  {/* Problem Track Callout */}
                   <div className="mt-4 rounded-xl border border-[#ebe4dc] bg-[#faf7f2] px-4 py-2.5 text-xs">
                     <span className="font-bold uppercase tracking-wider text-[#6d627a]">
                       Track:{" "}
@@ -434,7 +434,6 @@ export default async function AdminSubmissionsPage({
                     ) : null}
                   </div>
 
-                  {/* Description & Features */}
                   {s.description && (
                     <div className="mt-4">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-[#6d627a]">
@@ -457,7 +456,6 @@ export default async function AdminSubmissionsPage({
                     </div>
                   )}
 
-                  {/* Artifact Links */}
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
                     {s.github_url && (
                       <a
@@ -496,7 +494,6 @@ export default async function AdminSubmissionsPage({
                     )}
                   </div>
 
-                  {/* Judging & Review Form */}
                   <form
                     key={`review-${s.id}-${s.status}-${s.score ?? ""}`}
                     action={reviewSubmission}

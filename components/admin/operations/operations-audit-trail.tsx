@@ -133,15 +133,14 @@ export function OperationsAuditTrail({
   activity = [],
   intervalMs = 30000,
 }: OperationsAuditTrailProps) {
-  const [items, setItems] = useState<OperationActivityItem[]>(activity);
+  const [polledItems, setPolledItems] = useState<OperationActivityItem[] | null>(
+    null
+  );
   const [activeCategory, setActiveCategory] = useState<ActivityCategory>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const inFlightRef = useRef(false);
-
-  useEffect(() => {
-    setItems(activity);
-  }, [activity]);
+  const items = polledItems ?? activity;
 
   const syncLatestActivity = useCallback(async (showSpinner = false) => {
     if (inFlightRef.current) return;
@@ -156,7 +155,7 @@ export function OperationsAuditTrail({
 
       const data = await response.json();
       if (Array.isArray(data?.recent_activity)) {
-        setItems(data.recent_activity);
+        setPolledItems(data.recent_activity);
       }
     } catch {
       // Retain existing entries silently on transient network drops
@@ -209,7 +208,6 @@ export function OperationsAuditTrail({
 
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-[#e3dbd0] bg-white shadow-[0_8px_28px_rgba(27,5,62,0.03)]">
-      {/* Editorial Section Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#ebe4dc] bg-[#fdfcfa] px-5 py-6 sm:px-7">
         <div>
           <p className="editorial text-[15px] italic text-[#6828a2]">
@@ -249,7 +247,6 @@ export function OperationsAuditTrail({
       </div>
 
       <div className="p-5 sm:p-7">
-        {/* 0ms Client-Side Category Tabs */}
         {enrichedItems.length > 0 && (
           <div
             role="tablist"
@@ -285,7 +282,6 @@ export function OperationsAuditTrail({
           </div>
         )}
 
-        {/* Activity Stream */}
         {visibleEntries.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[#dcd0ec] bg-[#fcfaff] py-10 text-center">
             <p className="text-sm font-semibold text-[#1b053e]">

@@ -15,17 +15,14 @@ const SCAN_SYNC_STORAGE_KEY = "gxc_last_scan_at";
 const SCAN_COMPLETED_EVENT = "gxc:scan-completed";
 
 export function AdminMobileNav({ signOutSlot }: { signOutSlot: ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const [openPathname, setOpenPathname] = useState<string | null>(null);
   const pathname = usePathname();
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  const open = openPathname === pathname;
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setOpenPathname(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -35,7 +32,7 @@ export function AdminMobileNav({ signOutSlot }: { signOutSlot: ReactNode }) {
     <div className="relative md:hidden">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => setOpenPathname((prev) => (prev === pathname ? null : pathname))}
         aria-expanded={open}
         aria-label={open ? "Close navigation menu" : "Open navigation menu"}
         className="inline-flex items-center justify-center rounded-full border border-[#e3dbd0] bg-white p-2 text-[#1b053e] shadow-sm transition-colors hover:bg-[#f4effc]"
@@ -51,7 +48,7 @@ export function AdminMobileNav({ signOutSlot }: { signOutSlot: ReactNode }) {
           <Link
             href="/admin/operations"
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenPathname(null)}
             className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1b053e] transition-colors hover:bg-[#f2eafb]"
           >
             <SlidersHorizontal size={15} className="text-[#6828a2]" />
@@ -61,7 +58,7 @@ export function AdminMobileNav({ signOutSlot }: { signOutSlot: ReactNode }) {
           <Link
             href="/admin/submissions"
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenPathname(null)}
             className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1b053e] transition-colors hover:bg-[#f2eafb]"
           >
             <FolderGit2 size={15} className="text-[#6828a2]" />
@@ -71,7 +68,7 @@ export function AdminMobileNav({ signOutSlot }: { signOutSlot: ReactNode }) {
           <Link
             href="/dashboard"
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenPathname(null)}
             className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1b053e] transition-colors hover:bg-[#f2eafb]"
           >
             <LayoutDashboard size={15} className="text-[#6828a2]" />

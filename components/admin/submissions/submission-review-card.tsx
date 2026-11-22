@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, ExternalLink, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -45,23 +45,42 @@ export function SubmissionReviewCard({
   submission: s,
   onDecisionSaved,
 }: SubmissionReviewCardProps) {
-  const [status, setStatus] = useState<string>(s.status || "pending");
-  const [scoreInput, setScoreInput] = useState<string>(
-    typeof s.score === "number" ? String(s.score) : ""
-  );
-  const [remarks, setRemarks] = useState<string>(s.judge_remarks ?? "");
+  const propKey = `${s.id}|${s.status || "pending"}|${typeof s.score === "number" ? s.score : ""}|${s.judge_remarks ?? ""}`;
+
+  const [draft, setDraft] = useState<{
+    key: string;
+    status: string;
+    scoreInput: string;
+    remarks: string;
+  } | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "ok" | "err";
     text: string;
   } | null>(null);
 
-  // Sync if fresh DB data arrives from parent realtime sync
-  useEffect(() => {
-    setStatus(s.status || "pending");
-    setScoreInput(typeof s.score === "number" ? String(s.score) : "");
-    setRemarks(s.judge_remarks ?? "");
-  }, [s.status, s.score, s.judge_remarks]);
+  const activeDraft = draft && draft.key === propKey ? draft : null;
+  const status = activeDraft ? activeDraft.status : s.status || "pending";
+  const scoreInput = activeDraft
+    ? activeDraft.scoreInput
+    : typeof s.score === "number"
+      ? String(s.score)
+      : "";
+  const remarks = activeDraft ? activeDraft.remarks : s.judge_remarks ?? "";
+
+  function updateDraft(
+    patch: Partial<{ status: string; scoreInput: string; remarks: string }>
+  ) {
+    setDraft({
+      key: propKey,
+      status,
+      scoreInput,
+      remarks,
+      ...patch,
+    });
+    setFeedback(null);
+  }
 
   const badgeStyle =
     STATUS_BADGE_STYLES[status] ?? STATUS_BADGE_STYLES.pending;
@@ -121,6 +140,7 @@ export function SubmissionReviewCard({
         judge_remarks: cleanedRemarks,
       });
 
+      setDraft(null);
       setFeedback({
         type: "ok",
         text: "Decision saved.",
@@ -133,7 +153,6 @@ export function SubmissionReviewCard({
   return (
     <article className="min-w-0 overflow-hidden rounded-2xl border border-[#e3dbd0] bg-white shadow-[0_6px_24px_rgba(27,5,62,0.025)] transition-colors hover:border-[#d5c6e8]">
       <div className="p-4 sm:p-6">
-        {/* Header Row */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 text-xs text-[#6d627a]">
@@ -163,7 +182,6 @@ export function SubmissionReviewCard({
           </span>
         </div>
 
-        {/* Track Strip */}
         <div className="mt-3.5 rounded-xl border border-[#ebe4dc] bg-[#faf7f2] px-3.5 py-2 text-xs">
           <span className="font-semibold text-[#6d627a]">Track: </span>
           <span className="font-semibold text-[#1b053e]">{s.problem_title}</span>
@@ -172,7 +190,6 @@ export function SubmissionReviewCard({
           ) : null}
         </div>
 
-        {/* Project Writeup */}
         {s.description && (
           <div className="mt-4">
             <p className="text-[11px] font-bold uppercase tracking-wider text-[#6d627a]">
@@ -195,7 +212,6 @@ export function SubmissionReviewCard({
           </div>
         )}
 
-        {/* Links */}
         {(s.github_url || s.production_url || s.signed_deck_url) && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {s.github_url && (
@@ -236,7 +252,6 @@ export function SubmissionReviewCard({
           </div>
         )}
 
-        {/* Judge Decision Form */}
         <form
           onSubmit={handleSaveDecision}
           className="mt-5 grid gap-3.5 rounded-xl border border-[#ebe4dc] bg-[#faf7f2] p-3.5 sm:grid-cols-2 sm:p-4"
@@ -248,10 +263,7 @@ export function SubmissionReviewCard({
             <select
               id={`status-${s.id}`}
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setFeedback(null);
-              }}
+              onChange={(e) => updateDraft({ status: e.target.value })}
               className={ADMIN_FIELD_CLASS}
             >
               {STATUS_OPTIONS.map((opt) => (
@@ -274,10 +286,7 @@ export function SubmissionReviewCard({
               step="0.01"
               placeholder="e.g. 88"
               value={scoreInput}
-              onChange={(e) => {
-                setScoreInput(e.target.value);
-                setFeedback(null);
-              }}
+              onChange={(e) => updateDraft({ scoreInput: e.target.value })}
               className={ADMIN_FIELD_CLASS}
             />
           </div>
@@ -291,10 +300,7 @@ export function SubmissionReviewCard({
               rows={2}
               placeholder="Notes for the judging panel…"
               value={remarks}
-              onChange={(e) => {
-                setRemarks(e.target.value);
-                setFeedback(null);
-              }}
+              onChange={(e) => updateDraft({ remarks: e.target.value })}
               className={ADMIN_FIELD_CLASS}
             />
           </div>

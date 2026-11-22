@@ -1,3 +1,4 @@
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export async function getAuthenticatedDestination(
@@ -11,33 +12,41 @@ export async function getAuthenticatedDestination(
 
   if (error || !user) return null;
 
-  const [{ data: profile }, { data: candidateRegs }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("registrations")
-      .select("id,status")
-      .or(
-        user.email
-          ? `created_by.eq.${user.id},email.eq.${user.email}`
-          : `created_by.eq.${user.id}`
-      )
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: profile }, { data: candidateRegs }, { data: permission }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle(),
+
+      supabase
+        .from("registrations")
+        .select("id,status")
+        .or(
+          user.email
+            ? `created_by.eq.${user.id},email.eq.${user.email}`
+            : `created_by.eq.${user.id}`
+        )
+        .order("created_at", { ascending: false }),
+
+      supabase.rpc("event_actor_permission"),
+    ]);
 
   if (profile?.role === "admin") {
     return nextPath.startsWith("/admin") ? nextPath : "/admin";
   }
-  if (profile?.role === "volunteer") {
+
+  if (profile?.role === "volunteer" || Boolean(permission)) {
     return "/volunteer/dashboard";
   }
 
   const rows = candidateRegs ?? [];
+
   const registration =
-    rows.find((r) => String(r.status ?? "").toLowerCase() !== "cancelled") ??
+    rows.find(
+      (r) => String(r.status ?? "").toLowerCase() !== "cancelled"
+    ) ??
     rows[0] ??
     null;
 
@@ -45,7 +54,11 @@ export async function getAuthenticatedDestination(
     return "/signup";
   }
 
-  if (nextPath === "/register" || nextPath === "/signup" || nextPath === "/auth") {
+  if (
+    nextPath === "/register" ||
+    nextPath === "/signup" ||
+    nextPath === "/auth"
+  ) {
     return "/dashboard";
   }
 

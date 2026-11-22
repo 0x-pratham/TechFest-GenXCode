@@ -26,24 +26,24 @@ export function OperationsMetricsGrid({
   pendingCheckin = 0,
   intervalMs = 30000,
 }: OperationsMetricsGridProps) {
-  const [counts, setCounts] = useState<MetricsSnapshot>({
-    totalRegistered,
-    checkedIn,
-    snacksDistributed,
-    pendingCheckin,
-  });
+  const propKey = `${totalRegistered}|${checkedIn}|${snacksDistributed}|${pendingCheckin}`;
+
+  const [override, setOverride] = useState<{
+    key: string;
+    counts: MetricsSnapshot;
+  } | null>(null);
 
   const inFlightRef = useRef(false);
 
-  // Instant 0ms sync whenever parent OperationsLiveWorkspace receives fresh data
-  useEffect(() => {
-    setCounts({
-      totalRegistered,
-      checkedIn,
-      snacksDistributed,
-      pendingCheckin,
-    });
-  }, [totalRegistered, checkedIn, snacksDistributed, pendingCheckin]);
+  const counts: MetricsSnapshot =
+    override && override.key === propKey
+      ? override.counts
+      : {
+          totalRegistered,
+          checkedIn,
+          snacksDistributed,
+          pendingCheckin,
+        };
 
   const loadMetricsFromDatabase = useCallback(async () => {
     if (inFlightRef.current) return;
@@ -64,16 +64,18 @@ export function OperationsMetricsGrid({
             ? data.pending_checkin
             : Math.max(0, total - checked);
 
-        setCounts({
-          totalRegistered: total,
-          checkedIn: checked,
-          snacksDistributed: snacks,
-          pendingCheckin: pending,
+        setOverride({
+          key: propKey,
+          counts: {
+            totalRegistered: total,
+            checkedIn: checked,
+            snacksDistributed: snacks,
+            pendingCheckin: pending,
+          },
         });
         return;
       }
 
-      // Direct registrations table fallback if API is unreachable
       const supabase = createClient();
       const { data: rows, error: tableError } = await supabase
         .from("registrations")
@@ -95,17 +97,20 @@ export function OperationsMetricsGrid({
           return sum + (Number.isFinite(val) ? val : 0);
         }, 0);
 
-        setCounts({
-          totalRegistered: total,
-          checkedIn: checked,
-          snacksDistributed: snacks,
-          pendingCheckin: Math.max(0, total - checked),
+        setOverride({
+          key: propKey,
+          counts: {
+            totalRegistered: total,
+            checkedIn: checked,
+            snacksDistributed: snacks,
+            pendingCheckin: Math.max(0, total - checked),
+          },
         });
       }
     } finally {
       inFlightRef.current = false;
     }
-  }, []);
+  }, [propKey]);
 
   useEffect(() => {
     const pollTimer = window.setInterval(() => {

@@ -172,7 +172,9 @@ export function DigitalPass({
   }, []);
 
   useEffect(() => {
-    fetchLiveQr();
+    queueMicrotask(() => {
+      void fetchLiveQr();
+    });
 
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") {
@@ -180,7 +182,7 @@ export function DigitalPass({
       } else {
         setIsObscured(false);
         if (Date.now() >= expiresAtRef.current - 1500) {
-          fetchLiveQr();
+          void fetchLiveQr();
         }
       }
     };
@@ -189,7 +191,7 @@ export function DigitalPass({
     const handleFocus = () => {
       setIsObscured(false);
       if (Date.now() >= expiresAtRef.current - 1500) {
-        fetchLiveQr();
+        void fetchLiveQr();
       }
     };
 
@@ -211,7 +213,7 @@ export function DigitalPass({
       if (remainingMs <= 0) {
         setSecondsLeft(0);
         setQrSrc(null);
-        fetchLiveQr();
+        void fetchLiveQr();
       } else {
         setSecondsLeft(Math.ceil(remainingMs / 1000));
       }
@@ -291,13 +293,11 @@ export function DigitalPass({
             }}
             className="col-start-1 row-start-1 flex flex-col justify-between overflow-hidden rounded-[1.4rem] border border-[#e3dbd0] bg-gradient-to-b from-white via-[#fdfcfa] to-[#f6f2ea] bg-clip-padding text-[#1d1a18] shadow-[0_18px_44px_rgba(34,4,75,0.12)]"
           >
-            {/* Top Brand Accent Bar */}
             <div
               aria-hidden="true"
               className="pointer-events-none h-2 w-full shrink-0 rounded-t-[calc(1.4rem-1px)] bg-gradient-to-r from-[#4b187a] via-[#7b2cbf] to-[#4b187a]"
             />
 
-            {/* Architectural Crest Watermark */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
@@ -312,7 +312,6 @@ export function DigitalPass({
             </div>
 
             <div className="relative z-10 p-4 pb-3.5 sm:p-5 sm:pb-4">
-              {/* Unboxed Free Logo + Event Masthead */}
               <div className="flex items-center justify-between gap-2 border-b border-[#e8e1d5] pb-3.5">
                 <div className="flex min-w-0 items-center gap-3">
                   <Image
@@ -339,7 +338,6 @@ export function DigitalPass({
                 </span>
               </div>
 
-              {/* Attendee Identity */}
               <div className="mt-3.5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#837b72]">
                   Issued To
@@ -354,7 +352,6 @@ export function DigitalPass({
                 )}
               </div>
 
-              {/* Credential Specification Grid */}
               <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-[#e8e1d5] pt-2.5 text-[11.5px]">
                 <div className="min-w-0">
                   <dt className="text-[9.5px] font-semibold uppercase tracking-[0.1em] text-[#837b72]">
@@ -374,7 +371,6 @@ export function DigitalPass({
                 </div>
               </dl>
 
-              {/* Entry QR Module (scales up in Full Screen for fast gate scanning) */}
               <div className="mt-3.5 overflow-hidden rounded-xl border border-[#e3dbd0] bg-white shadow-[0_2px_10px_rgba(29,26,24,0.03)]">
                 <div className="flex flex-col items-center p-3 pb-2.5">
                   <div
@@ -424,7 +420,6 @@ export function DigitalPass({
                     )}
                   </div>
 
-                  {/* Token Validity & Manual Refresh */}
                   <div className="mt-2.5 flex w-full items-center justify-between text-[10.5px]">
                     <span
                       className={`inline-flex items-center gap-1 font-semibold tabular-nums ${
@@ -447,7 +442,7 @@ export function DigitalPass({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        fetchLiveQr();
+                        void fetchLiveQr();
                       }}
                       disabled={isRefreshing}
                       className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-semibold text-[#5f2295] transition-colors hover:bg-[#faf7ff] hover:text-[#220749] disabled:opacity-50"
@@ -460,7 +455,6 @@ export function DigitalPass({
                   </div>
                 </div>
 
-                {/* TTL Progress Bar */}
                 <div className="h-1 w-full bg-[#f3efe7]">
                   <div
                     style={{ width: `${progressPercent}%` }}
@@ -474,7 +468,6 @@ export function DigitalPass({
               </div>
             </div>
 
-            {/* Perforated Tear Line */}
             <div className="relative z-10 flex items-center justify-between px-3.5">
               <span
                 className={`-ml-5 h-4 w-4 rounded-full border border-[#e3dbd0] ${
@@ -489,7 +482,6 @@ export function DigitalPass({
               />
             </div>
 
-            {/* Bottom Ticket Stub */}
             <div className="relative z-10 flex items-center justify-between bg-[#f2ede3]/85 px-4 py-2.5 sm:px-5">
               <div>
                 <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[#837b72]">
@@ -531,7 +523,6 @@ export function DigitalPass({
               className="pointer-events-none h-2 w-full shrink-0 rounded-t-[calc(1.4rem-1px)] bg-gradient-to-r from-[#4b187a] via-[#7b2cbf] to-[#4b187a]"
             />
 
-            {/* Architectural Crest Watermark */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
@@ -546,7 +537,6 @@ export function DigitalPass({
             </div>
 
             <div className="relative z-10 p-4 pb-3.5 sm:p-5 sm:pb-4">
-              {/* Unboxed Free Logo + Back Masthead */}
               <div className="flex items-center justify-between gap-2.5 border-b border-[#e8e1d5] pb-3.5">
                 <div className="flex min-w-0 items-center gap-3">
                   <Image
@@ -588,7 +578,6 @@ export function DigitalPass({
                 ))}
               </ul>
 
-              {/* Engineered Verification Rules */}
               <div className="mt-4 rounded-xl border border-[#e3dbd0] bg-white/90 p-3 text-[11px] leading-relaxed text-[#5e564f]">
                 <p className="font-bold uppercase tracking-[0.08em] text-[#1d1a18]">
                   Verification Rules
@@ -600,7 +589,6 @@ export function DigitalPass({
               </div>
             </div>
 
-            {/* Perforated Tear Line */}
             <div className="relative z-10 flex items-center justify-between px-3.5">
               <span
                 className={`-ml-5 h-4 w-4 rounded-full border border-[#e3dbd0] ${
@@ -615,7 +603,6 @@ export function DigitalPass({
               />
             </div>
 
-            {/* Back Bottom Stub */}
             <div className="relative z-10 flex items-center justify-between bg-[#f2ede3]/85 px-4 py-2.5 text-[11.5px] sm:px-5">
               <span className="font-mono font-bold tracking-wider text-[#1d1a18]">
                 {applicationNumber}
@@ -628,7 +615,6 @@ export function DigitalPass({
         </motion.div>
       </div>
 
-      {/* Dedicated Full Screen Action Button */}
       <button
         type="button"
         onClick={toggleFullScreen}

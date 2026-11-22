@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -62,12 +62,13 @@ export function SnackPolicySection({
   snacksDistributed,
   onMutated,
 }: SnackPolicySectionProps) {
-  const normalizedProp = snackPolicy === "daily" ? "daily" : "event";
-  const [committedPolicy, setCommittedPolicy] = useState<"event" | "daily">(
-    normalizedProp
-  );
-  const [selectedPolicy, setSelectedPolicy] = useState<"event" | "daily">(
-    normalizedProp
+  const normalizedProp: "event" | "daily" =
+    snackPolicy === "daily" ? "daily" : "event";
+  const [optimisticPolicy, setOptimisticPolicy] = useState<
+    "event" | "daily" | null
+  >(null);
+  const [draftPolicy, setDraftPolicy] = useState<"event" | "daily" | null>(
+    null
   );
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -75,12 +76,8 @@ export function SnackPolicySection({
   } | null>(null);
   const [isSaving, startSaveTransition] = useTransition();
 
-  useEffect(() => {
-    const next = snackPolicy === "daily" ? "daily" : "event";
-    setCommittedPolicy(next);
-    setSelectedPolicy(next);
-  }, [snackPolicy]);
-
+  const committedPolicy = optimisticPolicy ?? normalizedProp;
+  const selectedPolicy = draftPolicy ?? committedPolicy;
   const isDirty = selectedPolicy !== committedPolicy;
 
   const attendancePct =
@@ -97,12 +94,12 @@ export function SnackPolicySection({
     e.preventDefault();
     if (isSaving || !isDirty) return;
 
-    const previousPolicy = committedPolicy;
+    const previousOptimistic = optimisticPolicy;
     const targetPolicy = selectedPolicy;
 
     setFeedback(null);
-    // 0ms optimistic update
-    setCommittedPolicy(targetPolicy);
+    setOptimisticPolicy(targetPolicy);
+    setDraftPolicy(null);
 
     const formData = new FormData();
     formData.set("snack_policy", targetPolicy);
@@ -127,7 +124,7 @@ export function SnackPolicySection({
           onSuccess();
           return;
         }
-        setCommittedPolicy(previousPolicy);
+        setOptimisticPolicy(previousOptimistic);
         setFeedback({
           type: "error",
           text: "Could not update snack distribution rule. Please retry.",
@@ -162,7 +159,6 @@ export function SnackPolicySection({
           devices.
         </p>
 
-        {/* Interactive Policy Selector Form */}
         <form onSubmit={handleSavePolicy} className="mt-5 space-y-3">
           <div
             role="radiogroup"
@@ -186,7 +182,7 @@ export function SnackPolicySection({
                     value={option.value}
                     checked={isSelected}
                     onChange={() => {
-                      setSelectedPolicy(option.value);
+                      setDraftPolicy(option.value);
                       setFeedback(null);
                     }}
                     disabled={isSaving}
@@ -245,7 +241,6 @@ export function SnackPolicySection({
         </form>
       </div>
 
-      {/* Live Gate & Refreshment Turnout + Scanner Launch */}
       <div className="mt-6 space-y-3.5">
         <div className="rounded-xl border border-[#e6dfd4] bg-[#faf7f2] p-4">
           <div className="flex items-baseline justify-between gap-2">

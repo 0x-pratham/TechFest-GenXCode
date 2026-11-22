@@ -29,6 +29,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   save: "Could not save your submission. Please try again.",
 };
 
+function isSubmissionWindowOpen(
+  isOpenFlag: boolean | null | undefined,
+  closesAtIso: string | null | undefined
+): boolean {
+  if (!isOpenFlag) return false;
+  if (!closesAtIso) return true;
+  const closesAtMs = new Date(closesAtIso).getTime();
+  if (Number.isNaN(closesAtMs)) return true;
+  return closesAtMs > Date.now();
+}
+
 function formatIstDeadline(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const parsed = new Date(iso);
@@ -170,12 +181,9 @@ export default async function ProjectSubmissionPage({
     if (fallbackProblem) lockedProblem = fallbackProblem as ProblemOption;
   }
 
-  const closesAtMs = windowSettings?.closes_at
-    ? new Date(windowSettings.closes_at).getTime()
-    : null;
-  const isOpen = Boolean(
-    windowSettings?.is_open &&
-      (!closesAtMs || Number.isNaN(closesAtMs) || closesAtMs > Date.now())
+  const isOpen = isSubmissionWindowOpen(
+    windowSettings?.is_open,
+    windowSettings?.closes_at
   );
   const closeLabel = formatIstDeadline(windowSettings?.closes_at);
 

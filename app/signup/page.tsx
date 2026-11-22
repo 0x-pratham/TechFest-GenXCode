@@ -1,3 +1,4 @@
+
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SignupPage() {
   const supabase = await createClient();
+
   const {
     data: { user },
     error,
@@ -28,6 +30,7 @@ export default async function SignupPage() {
         )
         .eq("id", user.id)
         .maybeSingle(),
+
       supabase
         .from("registrations")
         .select("id,application_number,status")
@@ -37,10 +40,14 @@ export default async function SignupPage() {
             : `created_by.eq.${user.id}`
         )
         .order("created_at", { ascending: false }),
+
       supabase.rpc("event_actor_permission"),
     ]);
 
-  if (profile?.role === "admin") redirect("/admin");
+  if (profile?.role === "admin") {
+    redirect("/admin");
+  }
+
   if (profile?.role === "volunteer" || Boolean(staffPermission)) {
     redirect("/volunteer/dashboard");
   }
@@ -54,12 +61,19 @@ export default async function SignupPage() {
     redirect("/dashboard");
   }
 
+  // Resolve the user's name from Google OAuth metadata.
+  // Supports both full_name and name metadata properties.
+  const metaName =
+    typeof user.user_metadata?.full_name === "string" &&
+    user.user_metadata.full_name.trim()
+      ? user.user_metadata.full_name.trim()
+      : typeof user.user_metadata?.name === "string"
+        ? user.user_metadata.name.trim()
+        : "";
+
+  // Existing database profile takes priority over OAuth metadata.
   const initialProfile = {
-    full_name:
-      profile?.full_name ??
-      (typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : ""),
+    full_name: profile?.full_name?.trim() || metaName,
     phone: profile?.phone ?? "",
     college: profile?.college ?? "",
     branch: profile?.branch ?? "",
@@ -91,18 +105,25 @@ export default async function SignupPage() {
           <p className="editorial text-[16px] italic text-[#5f2295] sm:text-[18px]">
             Take Off With GenXCode · Free Pass Registration
           </p>
+
           <h1 className="editorial mt-1.5 text-3xl font-bold leading-[1.08] tracking-[-0.025em] text-[#220749] sm:text-5xl">
             Complete your builder profile.
           </h1>
+
           <p className="mt-3 text-sm leading-relaxed text-[#76678a] sm:text-[15px]">
             Signed in as{" "}
-            <span className="font-semibold text-[#220749]">{user.email}</span>.
-            Fill in your academic details below to generate your complimentary
+            <span className="font-semibold text-[#220749]">
+              {user.email}
+            </span>
+            . Fill in your academic details below to generate your complimentary
             First Anniversary pass.
           </p>
         </header>
 
-        <RegistrationWorkflow initialProfile={initialProfile} existing={null} />
+        <RegistrationWorkflow
+          initialProfile={initialProfile}
+          existing={null}
+        />
       </section>
     </main>
   );

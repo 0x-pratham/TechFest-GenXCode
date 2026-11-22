@@ -126,12 +126,35 @@ export default async function AuthPage({
               GenXCode Community
               <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
-            <Link
-              href="/#schedule"
-              className="transition-colors hover:text-[#5f2295]"
-            >
-              View event schedule
-            </Link>
+
+            <div className="flex items-center gap-3.5">
+              <Link
+                href="/#schedule"
+                className="transition-colors hover:text-[#5f2295]"
+              >
+                View event schedule
+              </Link>
+
+              <span aria-hidden="true" className="text-[#dfd5eb]">
+                ·
+              </span>
+
+              <div className="flex items-center gap-2 text-[11px] text-[#a396b5]">
+                <Link
+                  href="/volunteer/login"
+                  className="transition-colors hover:text-[#5f2295]"
+                >
+                  Crew
+                </Link>
+                <span aria-hidden="true">/</span>
+                <Link
+                  href="/admin/login"
+                  className="transition-colors hover:text-[#5f2295]"
+                >
+                  Admin
+                </Link>
+              </div>
+            </div>
           </footer>
         </section>
       </div>

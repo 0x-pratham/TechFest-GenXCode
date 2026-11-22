@@ -20,16 +20,15 @@ export function SubmissionsLiveWorkspace({
   effectiveOpen,
   intervalMs = 15000,
 }: SubmissionsLiveWorkspaceProps) {
-  const [items, setItems] = useState<EnrichedSubmission[]>(submissions);
+  const [syncedItems, setSyncedItems] = useState<EnrichedSubmission[] | null>(
+    null
+  );
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [query, setQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const inFlightRef = useRef(false);
-
-  useEffect(() => {
-    setItems(submissions);
-  }, [submissions]);
+  const items = syncedItems ?? submissions;
 
   const syncSubmissionsFromDb = useCallback(async (showSpinner = false) => {
     if (inFlightRef.current) return;
@@ -104,7 +103,7 @@ export function SubmissionsLiveWorkspace({
         };
       });
 
-      setItems(enriched);
+      setSyncedItems(enriched);
     } finally {
       inFlightRef.current = false;
       setIsRefreshing(false);
@@ -134,7 +133,6 @@ export function SubmissionsLiveWorkspace({
     };
   }, [intervalMs, syncSubmissionsFromDb]);
 
-  // 0ms optimistic state patch when an organizer saves a decision on any card
   const handleDecisionSaved = useCallback(
     (
       id: string,
@@ -144,11 +142,13 @@ export function SubmissionsLiveWorkspace({
         judge_remarks: string | null;
       }
     ) => {
-      setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+      setSyncedItems((prev) =>
+        (prev ?? submissions).map((item) =>
+          item.id === id ? { ...item, ...patch } : item
+        )
       );
     },
-    []
+    [submissions]
   );
 
   const counts = useMemo(
@@ -194,7 +194,6 @@ export function SubmissionsLiveWorkspace({
 
   return (
     <section className="mt-8">
-      {/* Toolbar: Filter Tabs + Search + Manual Sync */}
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div
           role="tablist"
@@ -261,7 +260,6 @@ export function SubmissionsLiveWorkspace({
         </div>
       </div>
 
-      {/* Submission Cards */}
       {filtered.length > 0 ? (
         <div className="space-y-4">
           {filtered.map((submission) => (
