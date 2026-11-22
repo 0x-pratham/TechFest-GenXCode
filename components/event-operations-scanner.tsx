@@ -13,6 +13,7 @@ import {
   Utensils,
   UserCheck,
   ShieldCheck,
+  X,
 } from "lucide-react";
 
 type ScanResult = {
@@ -34,7 +35,6 @@ function normalizePassToken(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
 
-  // If QR encodes a URL containing ?token=... or #token=...
   try {
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
       const url = new URL(trimmed);
@@ -58,6 +58,7 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
   const [day, setDay] = useState(1);
   const [manualToken, setManualToken] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [popupOpen, setPopupOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState("");
@@ -85,6 +86,23 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
+  useEffect(() => {
+    if (!popupOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPopupOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [popupOpen]);
+
+  const dismissPopupAndReset = useCallback(() => {
+    setPopupOpen(false);
+    setResult(null);
+    setManualToken("");
+  }, []);
+
   const processToken = useCallback(
     async (raw: string) => {
       const cleanToken = normalizePassToken(raw);
@@ -93,6 +111,7 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
       busyRef.current = true;
       setBusy(true);
       setResult(null);
+      setPopupOpen(false);
 
       try {
         const response = await fetch("/api/event-operations/scan", {
@@ -107,14 +126,15 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
         });
 
         const data = (await response.json()) as ScanResult;
-        setResult(
-          response.ok
-            ? data
-            : {
-                result: "error",
-                error: data.error || "Unable to verify this pass.",
-              }
-        );
+        const nextResult: ScanResult = response.ok
+          ? data
+          : {
+              result: "error",
+              error: data.error || "Unable to verify this pass.",
+            };
+
+        setResult(nextResult);
+        setPopupOpen(true);
 
         if (
           response.ok &&
@@ -147,6 +167,7 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
           result: "error",
           error: "Network error. Check your connection and try again.",
         });
+        setPopupOpen(true);
       } finally {
         setBusy(false);
         busyRef.current = false;
@@ -158,6 +179,7 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
   const startCamera = async () => {
     setCameraError("");
     setResult(null);
+    setPopupOpen(false);
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError(
         "Camera access is unavailable. Use manual token entry below."
@@ -259,13 +281,138 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
               : "Could not verify pass.");
 
   return (
-    <section className="container-shell py-12 sm:py-16">
-      <div className="mb-10 text-center sm:text-left">
-        <h1 className="editorial text-4xl font-extrabold tracking-tight text-[#220749] sm:text-5xl">
-          Event Operations<span className="text-[#8638cd]">.</span>
-        </h1>
-        <p className="mt-3 text-[15px] font-medium text-[#76678a]">
-          Secure check-in and distribution terminal for GenXCode Tech Fest.
+    <section className="container-shell py-8 sm:py-12">
+      {/* Scan Result Pop-Up Modal */}
+      <AnimatePresence>
+        {popupOpen && result && (
+          <motion.div
+            key="scan-popup-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Scan verification result"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#120424]/65 p-4 backdrop-blur-xs"
+            onClick={() => setPopupOpen(false)}
+          >
+            <motion.div
+              key="scan-popup-card"
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 12 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md overflow-hidden rounded-3xl border border-[#e3dbd0] bg-white shadow-[0_24px_64px_rgba(18,4,36,0.28)]"
+            >
+              <div
+                className={`flex items-start justify-between gap-3 border-b p-5 sm:p-6 ${
+                  approved
+                    ? "border-green-200 bg-green-50 text-green-950"
+                    : "border-red-200 bg-red-50 text-red-950"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {approved ? (
+                    <CheckCircle2
+                      size={28}
+                      className="mt-0.5 shrink-0 text-green-600"
+                    />
+                  ) : (
+                    <CircleAlert
+                      size={28}
+                      className="mt-0.5 shrink-0 text-red-600"
+                    />
+                  )}
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-widest opacity-75">
+                      Day {day} · {action === "snack" ? "Food Claim" : "Gate Check-in"}
+                    </p>
+                    <h2 className="mt-1 text-base font-extrabold leading-snug sm:text-lg">
+                      {decisionBadge}
+                    </h2>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPopupOpen(false)}
+                  aria-label="Close pop-up"
+                  className="rounded-lg p-1.5 opacity-70 transition-opacity hover:bg-black/5 hover:opacity-100"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <p className="text-sm font-medium leading-relaxed text-[#3d2b54]">
+                  {decisionDetail}
+                </p>
+
+                {result.participant_name && (
+                  <div className="mt-5 space-y-3 rounded-2xl border border-[#ebe4dc] bg-[#faf7f2] p-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#76678a]">
+                        Participant
+                      </p>
+                      <p className="mt-0.5 text-base font-extrabold text-[#220749]">
+                        {result.participant_name}
+                      </p>
+                    </div>
+
+                    {result.application_number && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#76678a]">
+                          Pass / Application ID
+                        </p>
+                        <p className="mt-0.5 font-mono text-sm font-bold text-[#5f2295]">
+                          {result.application_number}
+                        </p>
+                      </div>
+                    )}
+
+                    {result.participant_email && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#76678a]">
+                          Email
+                        </p>
+                        <p className="mt-0.5 break-all text-xs font-medium text-[#5c4f6e]">
+                          {result.participant_email}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-6 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={dismissPopupAndReset}
+                    className="btn-primary flex-1 rounded-xl py-3 text-center text-sm font-bold"
+                  >
+                    Scan Next Pass
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPopupOpen(false)}
+                    className="rounded-xl border border-[#e3dbd0] bg-white px-4 py-3 text-xs font-bold text-[#5c4f6e] transition-colors hover:bg-[#faf7f2] hover:text-[#1b053e]"
+                  >
+                    Keep Details
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="mb-8 text-center sm:text-left">
+        <h2 className="editorial text-3xl font-extrabold tracking-tight text-[#220749] sm:text-4xl">
+          Pass Scanner<span className="text-[#8638cd]">.</span>
+        </h2>
+        <p className="mt-2 text-[14.5px] font-medium text-[#76678a]">
+          Verify valid passes, approve gate entry, or check food claims with
+          instant pop-up feedback.
         </p>
       </div>
 
@@ -306,6 +453,7 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
                 onClick={() => {
                   setAction("checkin");
                   setResult(null);
+                  setPopupOpen(false);
                 }}
                 className={`relative flex flex-col overflow-hidden rounded-[1.25rem] border p-5 text-left transition-all ${
                   action === "checkin"
@@ -339,6 +487,7 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
                 onClick={() => {
                   setAction("snack");
                   setResult(null);
+                  setPopupOpen(false);
                 }}
                 className={`relative flex flex-col overflow-hidden rounded-[1.25rem] border p-5 text-left transition-all ${
                   action === "snack"
@@ -563,15 +712,19 @@ export function EventOperationsScanner({ dayCount, permission }: Props) {
                   </div>
                 )}
 
-                <div className="mt-auto pt-8">
+                <div className="mt-auto pt-8 flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setPopupOpen(true)}
+                    className="w-full rounded-xl border border-[#dfcdf5] bg-white py-3 text-xs font-bold text-[#5f2295] transition-colors hover:bg-[#faf7ff]"
+                  >
+                    Reopen Pop-Up
+                  </button>
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setResult(null);
-                      setManualToken("");
-                    }}
+                    onClick={dismissPopupAndReset}
                     className="w-full rounded-xl bg-[#f4effc] py-4 text-[14.5px] font-bold text-[#5f2295] transition-colors hover:bg-[#eadff5]"
                   >
                     Clear &amp; Scan Next
