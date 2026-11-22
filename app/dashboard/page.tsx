@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -20,6 +21,7 @@ import { signOut } from "@/app/dashboard/actions";
 import { Navbar } from "@/components/navbar";
 import { DashboardUpdates } from "@/components/dashboard-updates";
 import { WhatsAppChannelFloat } from "@/components/whatsapp-channel-float";
+import { WhatsAppChannelGateModal } from "@/components/whatsapp-channel-gate-modal";
 import { Hack2SkillGateCard } from "@/components/register/hack2skill-gate-card";
 import { formatStaffIdentifier } from "@/lib/format-staff-identifier";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -37,10 +39,12 @@ export default async function DashboardPage({
   searchParams: Promise<{ h2s?: string; h2s_error?: string }>;
 }) {
   const supabase = await createClient();
+
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
+
   if (error || !user) redirect("/auth");
 
   const [
@@ -54,6 +58,7 @@ export default async function DashboardPage({
       .select("full_name,email,role,college,branch,study_year")
       .eq("id", user.id)
       .maybeSingle(),
+
     supabase
       .from("registrations")
       .select("id,application_number,status,hack2skill_registered")
@@ -66,21 +71,32 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+
     supabase.rpc("event_actor_permission"),
+
     searchParams,
   ]);
 
-  const isStaff = profile?.role === "admin" || Boolean(staffPermission);
+  const isStaff =
+    profile?.role === "admin" || Boolean(staffPermission);
+
   if (!registration && !isStaff) redirect("/signup");
 
   const name =
-    profile?.full_name || user.user_metadata?.full_name || "Participant";
+    profile?.full_name ||
+    user.user_metadata?.full_name ||
+    "Participant";
+
   const firstName = name.trim().split(/\s+/)[0] || "Builder";
 
   let isHack2SkillVerified =
     isStaff || Boolean(registration?.hack2skill_registered);
 
-  if (!isHack2SkillVerified && params.h2s === "done" && registration?.id) {
+  if (
+    !isHack2SkillVerified &&
+    params.h2s === "done" &&
+    registration?.id
+  ) {
     const { data: rpcOk } = await supabase.rpc(
       "confirm_hack2skill_registration"
     );
@@ -98,7 +114,7 @@ export default async function DashboardPage({
     isHack2SkillVerified = true;
   }
 
-  // Inline Hack2Skill gate on /dashboard (no route bounce)
+  // Inline Hack2Skill gate on /dashboard (no route bounce).
   if (!isHack2SkillVerified && registration) {
     return (
       <main className="min-h-screen bg-[#fcfaff] text-[#220749]">
@@ -122,9 +138,11 @@ export default async function DashboardPage({
             <p className="editorial text-[16px] italic text-[#5f2295] sm:text-[18px]">
               One Final Step · Unlock Your Builder Dashboard
             </p>
+
             <h1 className="editorial mt-1.5 text-3xl font-bold leading-[1.08] tracking-[-0.025em] text-[#220749] sm:text-5xl">
               Complete Hack2Skill registration to continue.
             </h1>
+
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#76678a] sm:text-[15px]">
               Your GenXCode pass (
               <span className="font-mono font-semibold text-[#5f2295]">
@@ -165,6 +183,7 @@ export default async function DashboardPage({
     await Promise.all([
       getCachedEventSchedule(),
       getCachedProblemStatements(),
+
       supabase
         .from("registration_problem_statements")
         .select("problem_statement_id")
@@ -173,13 +192,16 @@ export default async function DashboardPage({
           registration?.id ?? "00000000-0000-0000-0000-000000000000"
         )
         .maybeSingle(),
+
       getCachedScheduleSettings(),
     ]);
 
   const staffIdentifier = formatStaffIdentifier(name);
+
   const selectedProblem = problems.find(
     (p) => p.id === selection?.problem_statement_id
   );
+
   const academicSummary = [profile?.branch, profile?.study_year]
     .filter(Boolean)
     .join(" · ");
@@ -236,6 +258,7 @@ export default async function DashboardPage({
                   <p className="text-xs font-semibold text-[#5f2295]">
                     {isStaff ? "Staff credential" : "Participant credential"}
                   </p>
+
                   <p className="mt-0.5 break-all text-sm text-[#76678a]">
                     {user.email}
                   </p>
@@ -251,6 +274,7 @@ export default async function DashboardPage({
                 <p className="text-xs text-[#76678a]">
                   {isStaff ? "Staff identifier" : "Application number"}
                 </p>
+
                 <p className="editorial mt-1 text-3xl font-bold tracking-tight text-[#220749] sm:text-4xl">
                   {isStaff
                     ? staffIdentifier
@@ -304,7 +328,7 @@ export default async function DashboardPage({
             </div>
           </article>
 
-          {/* RIGHT CARD: Ivory-White Ticket Summary / Staff Role Card */}
+          {/* RIGHT CARD: Ticket Summary / Staff Role Card */}
           <article className="flex flex-col justify-between overflow-hidden rounded-[1.5rem] border border-[#e6dfd4] bg-gradient-to-b from-white via-[#fdfcfa] to-[#f7f4ee] text-[#1d1a18] shadow-[0_14px_40px_rgba(34,4,75,0.05)] lg:col-span-5">
             {/* Curved Top Purple Accent */}
             <div
@@ -317,6 +341,7 @@ export default async function DashboardPage({
                 <span className="editorial text-sm italic text-[#5f2295]">
                   {isStaff ? "Event Team" : "Builder Pass Summary"}
                 </span>
+
                 <Ticket size={17} className="text-[#5f2295]" />
               </div>
 
@@ -336,6 +361,7 @@ export default async function DashboardPage({
                 <dl className="mt-5 space-y-2.5 border-t border-[#e8e2d7] pt-4 text-xs">
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#837b72]">Problem statement</dt>
+
                     <dd className="max-w-[60%] truncate font-semibold text-[#1d1a18]">
                       {selectedProblem ? (
                         selectedProblem.title
@@ -347,8 +373,10 @@ export default async function DashboardPage({
                       )}
                     </dd>
                   </div>
+
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#837b72]">Pass tier</dt>
+
                     <dd className="font-semibold text-[#5f2295]">
                       First Anniversary · ₹0
                     </dd>
@@ -369,6 +397,7 @@ export default async function DashboardPage({
                 <span className="text-[#756d65]">
                   {isStaff ? "Role" : "Status"}
                 </span>
+
                 <span className="font-semibold capitalize text-[#1d1a18]">
                   {isStaff
                     ? profile?.role === "admin"
@@ -394,7 +423,7 @@ export default async function DashboardPage({
           </div>
         )}
 
-        {/* 3. Humanized Important Information & Readiness Guide (Below) */}
+        {/* 3. Important Information & Readiness Guide */}
         {!isStaff && (
           <section className="mt-10 rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.03)] sm:p-8">
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#f0e8f8] pb-5">
@@ -402,6 +431,7 @@ export default async function DashboardPage({
                 <p className="editorial text-[16px] italic text-[#5f2295]">
                   Good to know
                 </p>
+
                 <h2 className="editorial mt-1 text-2xl font-bold tracking-tight text-[#220749] sm:text-3xl">
                   Important information for event day
                 </h2>
@@ -420,12 +450,14 @@ export default async function DashboardPage({
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadff5] bg-white text-[#5f2295]">
                   <QrCode size={17} />
                 </div>
+
                 <h3 className="mt-4 text-[15px] font-semibold text-[#220749]">
                   Gate check-in &amp; live QR pass
                 </h3>
+
                 <p className="mt-2 text-[13.5px] leading-relaxed text-[#76678a]">
-                  Your entry QR code refreshes automatically every 30 seconds for
-                  security, so open{" "}
+                  Your entry QR code refreshes automatically every 30 seconds
+                  for security, so open{" "}
                   <Link
                     href="/dashboard/pass"
                     className="font-semibold text-[#5f2295] underline decoration-[#c7a6f3] underline-offset-2 hover:text-[#220749]"
@@ -442,14 +474,16 @@ export default async function DashboardPage({
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadff5] bg-white text-[#5f2295]">
                   <Coffee size={17} />
                 </div>
+
                 <h3 className="mt-4 text-[15px] font-semibold text-[#220749]">
                   Complimentary meals &amp; sessions
                 </h3>
+
                 <p className="mt-2 text-[13.5px] leading-relaxed text-[#76678a]">
                   To celebrate one year of GenXCode, morning breakfast, tea,
                   and refreshments are on us—show the same QR pass at the
-                  hospitality counter. All 3 workshops and PromptWars rounds are
-                  included.
+                  hospitality counter. All 3 workshops and PromptWars rounds
+                  are included.
                 </p>
               </div>
 
@@ -458,9 +492,11 @@ export default async function DashboardPage({
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadff5] bg-white text-[#5f2295]">
                   <Laptop size={17} />
                 </div>
+
                 <h3 className="mt-4 text-[15px] font-semibold text-[#220749]">
                   What to carry &amp; submissions
                 </h3>
+
                 <p className="mt-2 text-[13.5px] leading-relaxed text-[#76678a]">
                   Carry your laptop, charger, extension board if handy, and a
                   valid college ID. Choose your problem statement above early,
@@ -485,6 +521,7 @@ export default async function DashboardPage({
                   WhatsApp channel from the button in the corner.
                 </span>
               </span>
+
               <span className="font-semibold text-[#5f2295]">
                 Individual Participation · Take Off With GenXCode
               </span>
@@ -493,6 +530,15 @@ export default async function DashboardPage({
         )}
       </section>
 
+      {/* WhatsApp Channel Gate — Participants Only */}
+      {!isStaff && (
+        <WhatsAppChannelGateModal
+          url={scheduleSettings?.whatsapp_channel_url ?? null}
+          storageKeySuffix={registration?.id ?? user.id}
+        />
+      )}
+
+      {/* Floating WhatsApp Channel Button */}
       <WhatsAppChannelFloat
         url={scheduleSettings?.whatsapp_channel_url ?? null}
       />
