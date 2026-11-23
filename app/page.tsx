@@ -46,6 +46,17 @@ const HOME_JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "GenXCode",
+      alternateName: ["Take Off With GenXCode", "GenXCode Tech Fest"],
+      url: SITE_URL,
+      inLanguage: "en-IN",
+      publisher: {
+        "@id": `${SITE_URL}/#organization`,
+      },
+    },
+    {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: "GenXCode by Cosmolix",

@@ -4,7 +4,7 @@ import "./globals.css";
 import { ScrollEffects } from "@/components/scroll-effects";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://takeoff.genxcode.in";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://techfest.genxcode.in";
 const EVENT_TITLE = "Take Off With GenXCode | Build What Matters";
 const EVENT_DESCRIPTION =
   "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.";
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
       }
     : {}),
   icons: {
-    icon: [{ url: "/genxcode-mark.webp", type: "image/webp" }],
-    shortcut: "/genxcode-mark.webp",
-    apple: "/genxcode-mark.webp",
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
   },
   openGraph: {
     type: "website",
