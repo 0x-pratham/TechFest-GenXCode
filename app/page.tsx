@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthenticatedDestination } from "@/lib/auth/get-authenticated-destination";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://takeoff.genxcode.in";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://techfest.genxcode.in";
 
 export const metadata: Metadata = {
   title: "Take Off With GenXCode | Build What Matters",
@@ -63,12 +63,29 @@ const HOME_JSON_LD = {
       name: "Take Off With GenXCode",
       description:
         "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.",
+      startDate: "2026-11-27T09:00:00+05:30",
+      endDate: "2026-11-29T18:00:00+05:30",
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       eventStatus: "https://schema.org/EventScheduled",
       inLanguage: "en-IN",
       isAccessibleForFree: true,
       url: SITE_URL,
       image: [`${SITE_URL}/genxcode-hackathon-team.png`],
+      location: {
+        "@type": "Place",
+        name: "JSPM University Campus",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Wagholi",
+          addressLocality: "Pune",
+          addressRegion: "Maharashtra",
+          postalCode: "412207",
+          addressCountry: "IN",
+        },
+      },
+      performer: {
+        "@id": `${SITE_URL}/#organization`,
+      },
       organizer: {
         "@id": `${SITE_URL}/#organization`,
       },
@@ -106,6 +123,7 @@ const HOME_JSON_LD = {
         price: "0",
         priceCurrency: "INR",
         availability: "https://schema.org/InStock",
+        validFrom: "2026-11-01T00:00:00+05:30",
         url: `${SITE_URL}/auth`,
       },
     },
