@@ -5,6 +5,9 @@ import { ScrollEffects } from "@/components/scroll-effects";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://takeoff.genxcode.in";
+const EVENT_TITLE = "Take Off With GenXCode | Build What Matters";
+const EVENT_DESCRIPTION =
+  "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -15,24 +18,28 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Take Off With GenXCode | Build What Matters",
+    default: EVENT_TITLE,
     template: "%s · Take Off With GenXCode",
   },
-  description:
-    "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.",
+  description: EVENT_DESCRIPTION,
   applicationName: "Take Off With GenXCode",
   keywords: [
     "Take Off With GenXCode",
     "GenXCode",
     "Cosmolix",
+    "Cosmolix Private Limited",
     "PromptWars",
     "Hackathon",
     "AI Workshop",
+    "Live Pitching",
     "Pune Tech Fest",
   ],
-  authors: [{ name: "GenXCode by Cosmolix" }],
+  authors: [{ name: "GenXCode by Cosmolix", url: "https://cosmolix.co.in" }],
   creator: "GenXCode by Cosmolix",
   publisher: "Cosmolix Private Limited",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [{ url: "/genxcode-mark.webp", type: "image/webp" }],
     shortcut: "/genxcode-mark.webp",
@@ -43,9 +50,8 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "/",
     siteName: "Take Off With GenXCode",
-    title: "Take Off With GenXCode | Build What Matters",
-    description:
-      "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.",
+    title: EVENT_TITLE,
+    description: EVENT_DESCRIPTION,
     images: [
       {
         url: "/genxcode-hackathon-team.png",
@@ -57,15 +63,22 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Take Off With GenXCode | Build What Matters",
-    description:
-      "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.",
+    title: EVENT_TITLE,
+    description: EVENT_DESCRIPTION,
     images: ["/genxcode-hackathon-team.png"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
+  category: "technology",
 };
 
 export default function RootLayout({
