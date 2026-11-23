@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL || "https://takeoff.genxcode.in"
+  ).replace(/\/$/, "");
+
   return {
     rules: [
       {
@@ -17,7 +21,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://techfest.genxcode.in/sitemap.xml",
-    host: "https://techfest.genxcode.in",
+    sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
   };
 }
