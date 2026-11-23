@@ -8,6 +8,8 @@ const SITE_URL =
 const EVENT_TITLE = "Take Off With GenXCode | Build What Matters";
 const EVENT_DESCRIPTION =
   "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.";
+const GOOGLE_VERIFICATION =
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,6 +42,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  ...(GOOGLE_VERIFICATION
+    ? {
+        verification: {
+          google: GOOGLE_VERIFICATION,
+        },
+      }
+    : {}),
   icons: {
     icon: [{ url: "/genxcode-mark.webp", type: "image/webp" }],
     shortcut: "/genxcode-mark.webp",
