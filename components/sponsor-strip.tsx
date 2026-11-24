@@ -177,20 +177,18 @@ function SponsorTile({
         )}
       </motion.div>
 
-      {/* Minimal non-bold name revealed below the card on hover */}
-      <motion.div
-        initial={false}
-        animate={{
-          opacity: isHovered ? 1 : 0,
-          y: isHovered ? 0 : -3,
-        }}
-        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none mt-2.5 text-center"
-      >
-        <span className="block whitespace-nowrap text-xs font-normal tracking-[0.02em] text-[#6b6475] sm:text-[13px]">
+      {/* Always-visible brand name in editorial typography below the card */}
+      <div className="mt-3 text-center">
+        <span
+          className={`editorial block whitespace-nowrap text-sm font-normal tracking-[-0.01em] no-underline transition-colors duration-200 sm:text-base ${
+            hasUrl
+              ? "text-[#1b053e] group-hover:text-[#6828a2]"
+              : "text-[#220749]/80"
+          }`}
+        >
           {sponsor.name}
         </span>
-      </motion.div>
+      </div>
     </div>
   );
 
@@ -201,7 +199,7 @@ function SponsorTile({
         target="_blank"
         rel="noopener noreferrer"
         aria-label={sponsor.name}
-        className="inline-flex shrink-0 items-start pt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d1a18]/30 focus-visible:ring-offset-2"
+        className="group inline-flex shrink-0 items-start pt-1 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d1a18]/30 focus-visible:ring-offset-2"
       >
         {card}
       </a>
