@@ -1,12 +1,12 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { Code2, GraduationCap, Trophy } from "lucide-react";
+import { CalendarDays, Code2, GraduationCap, Trophy } from "lucide-react";
 
-// Natural language days, completely removing numeric steps
 const days = [
   {
     day: "Day One",
+    date: "5th Dec",
     label: "Learn",
     title: "AI Workshop.",
     description:
@@ -15,6 +15,7 @@ const days = [
   },
   {
     day: "Day Two",
+    date: "6th Dec",
     label: "Build",
     title: "Hackathon PromptWars.",
     description:
@@ -23,6 +24,7 @@ const days = [
   },
   {
     day: "Day Three",
+    date: "7th Dec",
     label: "Pitch",
     title: "Make your work count.",
     description:
@@ -32,7 +34,6 @@ const days = [
 ];
 
 export function ScheduleSection() {
-  // Simple, elegant fade-up animations
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
@@ -71,7 +72,9 @@ export function ScheduleSection() {
           className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end lg:mb-20"
         >
           <div>
-            <p className="eyebrow mb-4 text-[#8638cd]">The Journey</p>
+            <p className="eyebrow mb-4 text-[#8638cd]">
+              The Journey · 5th – 7th Dec
+            </p>
             <h2 className="editorial text-[clamp(2.5rem,5vw,3.75rem)] leading-[1.05] tracking-tight text-[#220749]">
               Three days.
               <br />
@@ -102,16 +105,25 @@ export function ScheduleSection() {
                 key={item.day}
                 className="group relative flex min-h-[340px] flex-col justify-between overflow-hidden rounded-[2rem] border border-[#eadff5] bg-white/60 p-8 shadow-[0_8px_30px_rgba(34,4,75,0.02)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-[#d8c5ee] hover:bg-white/80 hover:shadow-[0_20px_40px_rgba(95,34,149,0.06)]"
               >
-                {/* Top Section: Icon & Day Label */}
-                <div className="flex items-center justify-between">
-                  <div className="flex size-14 items-center justify-center rounded-[1.25rem] bg-[#f4effc] text-[#5f2295] ring-1 ring-[#eadff5]/50 transition-colors duration-300 group-hover:bg-[#5f2295] group-hover:text-white group-hover:ring-[#5f2295]">
+                {/* Top Section: Icon & Day + Date Highlight */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex size-14 shrink-0 items-center justify-center rounded-[1.25rem] bg-[#f4effc] text-[#5f2295] ring-1 ring-[#eadff5]/50 transition-colors duration-300 group-hover:bg-[#5f2295] group-hover:text-white group-hover:ring-[#5f2295]">
                     <Icon strokeWidth={1.5} className="size-6" />
                   </div>
 
-                  <div className="flex items-center gap-2 rounded-full border border-[#eadff5] bg-white/50 px-3.5 py-1.5 shadow-sm transition-colors duration-300 group-hover:border-[#d8c5ee]">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8638cd]">
-                      {item.day}
-                    </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-2 rounded-full border border-[#eadff5] bg-white/70 px-3.5 py-1 shadow-sm transition-colors duration-300 group-hover:border-[#d8c5ee]">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8638cd]">
+                        {item.day}
+                      </span>
+                    </div>
+
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#5f2295] to-[#8638cd] px-3 py-1 text-white shadow-[0_6px_16px_rgba(95,34,149,0.22)]">
+                      <CalendarDays strokeWidth={2} className="size-3 shrink-0" />
+                      <span className="text-[11px] font-bold tracking-wide">
+                        {item.date}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

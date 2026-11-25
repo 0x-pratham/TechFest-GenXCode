@@ -74,8 +74,8 @@ const HOME_JSON_LD = {
       name: "Take Off With GenXCode",
       description:
         "Three days of AI workshops, PromptWars hackathon, and live pitching. Celebrate one year of GenXCode by Cosmolix.",
-      startDate: "2026-11-27T09:00:00+05:30",
-      endDate: "2026-11-29T18:00:00+05:30",
+      startDate: "2026-12-05T09:00:00+05:30",
+      endDate: "2026-12-07T18:00:00+05:30",
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       eventStatus: "https://schema.org/EventScheduled",
       inLanguage: "en-IN",

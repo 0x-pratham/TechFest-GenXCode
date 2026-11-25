@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -7,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Coffee,
+  ExternalLink,
   FolderGit2,
   Info,
   Laptop,
@@ -32,6 +32,10 @@ import {
 } from "@/lib/cache/event-data";
 
 export const dynamic = "force-dynamic";
+
+const HACK2SKILL_EVENT_URL =
+  process.env.NEXT_PUBLIC_HACK2SKILL_URL ||
+  "https://hack2skill.com/event/promptwars-x-gxctakeoff";
 
 export default async function DashboardPage({
   searchParams,
@@ -77,26 +81,19 @@ export default async function DashboardPage({
     searchParams,
   ]);
 
-  const isStaff =
-    profile?.role === "admin" || Boolean(staffPermission);
+  const isStaff = profile?.role === "admin" || Boolean(staffPermission);
 
   if (!registration && !isStaff) redirect("/signup");
 
   const name =
-    profile?.full_name ||
-    user.user_metadata?.full_name ||
-    "Participant";
+    profile?.full_name || user.user_metadata?.full_name || "Participant";
 
   const firstName = name.trim().split(/\s+/)[0] || "Builder";
 
   let isHack2SkillVerified =
     isStaff || Boolean(registration?.hack2skill_registered);
 
-  if (
-    !isHack2SkillVerified &&
-    params.h2s === "done" &&
-    registration?.id
-  ) {
+  if (!isHack2SkillVerified && params.h2s === "done" && registration?.id) {
     const { data: rpcOk } = await supabase.rpc(
       "confirm_hack2skill_registration"
     );
@@ -206,6 +203,9 @@ export default async function DashboardPage({
     .filter(Boolean)
     .join(" · ");
 
+  const showHack2SkillReminder =
+    !isStaff && Boolean(registration) && !registration?.hack2skill_registered;
+
   return (
     <main className="min-h-screen bg-[#fcfaff] text-[#220749]">
       {/* Universal Floating Navbar with Sign Out Only */}
@@ -248,8 +248,49 @@ export default async function DashboardPage({
           </p>
         </div>
 
+        {/* Missed Hack2Skill Registration Prompt */}
+        {showHack2SkillReminder && (
+          <aside
+            aria-label="Hack2Skill registration reminder"
+            className="mt-7 rounded-[1.5rem] border border-[#e2d0f7] bg-gradient-to-r from-[#faf5ff] via-white to-[#f6effe] p-5 shadow-[0_10px_28px_rgba(95,34,149,0.06)] sm:p-6"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f0e5fc] px-2.5 py-0.5 text-[11px] font-semibold text-[#5f2295]">
+                  <Sparkles size={12} />
+                  <span>Take Off With GenXCode</span>
+                </span>
+
+                <h2 className="editorial mt-2 text-xl font-bold tracking-tight text-[#220749] sm:text-2xl">
+                  Missed Hack2Skill Registration for Take Off With GenXCode?
+                </h2>
+
+                <p className="mt-1 text-xs leading-relaxed text-[#76678a] sm:text-sm">
+                  Complete your official Hack2Skill entry with pass{" "}
+                  <span className="font-mono font-semibold text-[#5f2295]">
+                    {registration?.application_number}
+                  </span>{" "}
+                  so your hackathon registration stays synced across platforms.
+                </p>
+              </div>
+
+              <div className="flex w-full shrink-0 flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center">
+                <a
+                  href={HACK2SKILL_EVENT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold sm:w-auto"
+                >
+                  <span>Complete Now</span>
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+          </aside>
+        )}
+
         {/* 1. Two-Column Identity & Pass Deck */}
-        <div className="mt-9 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* LEFT CARD: Participant / Staff Credential Card */}
           <article className="flex flex-col justify-between rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.04)] sm:p-7 lg:col-span-7">
             <div>
