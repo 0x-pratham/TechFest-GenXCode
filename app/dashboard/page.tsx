@@ -248,20 +248,19 @@ export default async function DashboardPage({
         {/* Always-Visible Hack2Skill Registration Prompt */}
         <aside
           aria-label="Hack2Skill registration reminder"
-          className="mt-7 rounded-[1.5rem] border border-[#e2d0f7] bg-gradient-to-r from-[#faf5ff] via-white to-[#f6effe] p-5 shadow-[0_10px_28px_rgba(95,34,149,0.06)] sm:p-6"
+          className="mt-8 rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.04)] sm:p-7"
         >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f0e5fc] px-2.5 py-0.5 text-[11px] font-semibold text-[#5f2295]">
-                <Sparkles size={12} />
-                <span>Take Off With GenXCode</span>
-              </span>
+              <p className="editorial text-[15px] italic font-normal text-[#5f2295] sm:text-base">
+                Take Off With GenXCode
+              </p>
 
-              <h2 className="editorial mt-2 text-xl font-bold tracking-tight text-[#220749] sm:text-2xl">
+              <h2 className="editorial mt-1 text-2xl font-bold leading-snug tracking-tight text-[#220749] sm:text-[1.75rem]">
                 Missed Hack2Skill Registration for Take Off With GenXCode?
               </h2>
 
-              <p className="mt-1 text-xs leading-relaxed text-[#76678a] sm:text-sm">
+              <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-[#76678a] sm:text-sm">
                 Make sure your official Hack2Skill registration is also
                 completed on the event portal so your hackathon entry stays
                 synced.
