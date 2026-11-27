@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   CheckCircle2,
+  Circle,
   Clock,
   Coffee,
   ExternalLink,
@@ -222,82 +223,84 @@ export default async function DashboardPage({
       </Navbar>
 
       {/* Main Dashboard Stage */}
-      <section className="container-shell pb-16 pt-28 sm:pt-32">
-        {/* Editorial Greeting Header */}
-        <div className="max-w-2xl">
-          <p className="editorial text-[17px] italic font-normal text-[#5f2295] sm:text-[19px]">
-            {isStaff
-              ? "GenXCode Event Operations"
-              : "First Anniversary · Builder Space"}
-          </p>
+      <section className="container-shell space-y-8 pb-16 pt-28 sm:space-y-10 sm:pt-32">
+        {/* Top Row: Greeting + Always-Visible Hack2Skill Strip */}
+        <div className="space-y-6">
+          <div className="max-w-2xl">
+            <p className="editorial text-[17px] italic font-normal text-[#5f2295] sm:text-[19px]">
+              {isStaff
+                ? "GenXCode Event Operations"
+                : "First Anniversary · Builder Space"}
+            </p>
 
-          <h1 className="editorial mt-1.5 text-4xl leading-[1.05] tracking-[-0.03em] sm:text-5xl xl:text-[3.5rem]">
-            Welcome back,{" "}
-            <span className="italic font-normal text-[#5f2295]">
-              {firstName}.
-            </span>
-          </h1>
+            <h1 className="editorial mt-1.5 text-4xl leading-[1.05] tracking-[-0.03em] sm:text-5xl xl:text-[3.5rem]">
+              Welcome back,{" "}
+              <span className="italic font-normal text-[#5f2295]">
+                {firstName}.
+              </span>
+            </h1>
 
-          <p className="mt-3.5 text-[15px] leading-relaxed text-[#76678a]">
-            {isStaff
-              ? "Your event staff credentials are active. Manage check-ins, refreshment distribution, and live schedules from your workspace."
-              : "Your complimentary First Anniversary pass is confirmed. Keep your QR badge handy at check-in, pick your problem statement below, and submit your build before the deadline."}
-          </p>
+            <p className="mt-3.5 text-[15px] leading-relaxed text-[#76678a]">
+              {isStaff
+                ? "Your event staff credentials are active. Manage check-ins, refreshment distribution, and live schedules from your workspace."
+                : "Your complimentary First Anniversary pass is confirmed. Keep your QR badge handy at check-in, pick your problem statement below, and submit your build before the deadline."}
+            </p>
+          </div>
+
+          {/* Always-Visible Hack2Skill Registration Prompt */}
+          <aside
+            aria-label="Hack2Skill registration reminder"
+            className="rounded-[1.5rem] border border-[#eadff5] bg-white p-5 shadow-[0_12px_36px_rgba(34,4,75,0.04)] sm:p-6"
+          >
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
+                <p className="editorial text-[15px] italic font-normal text-[#5f2295]">
+                  Take Off With GenXCode
+                </p>
+
+                <h2 className="editorial mt-0.5 text-xl font-bold leading-snug tracking-tight text-[#220749] sm:text-2xl">
+                  Missed Hack2Skill Registration for Take Off With GenXCode?
+                </h2>
+
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#76678a] sm:text-sm">
+                  Make sure your official Hack2Skill registration is also
+                  completed on the event portal so your hackathon entry stays
+                  synced.
+                </p>
+              </div>
+
+              <div className="w-full shrink-0 md:w-auto">
+                <a
+                  href={HACK2SKILL_EVENT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs font-bold md:w-auto"
+                >
+                  <span>Complete Now</span>
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+          </aside>
         </div>
 
-        {/* Always-Visible Hack2Skill Registration Prompt */}
-        <aside
-          aria-label="Hack2Skill registration reminder"
-          className="mt-8 rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.04)] sm:p-7"
-        >
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <p className="editorial text-[15px] italic font-normal text-[#5f2295] sm:text-base">
-                Take Off With GenXCode
-              </p>
-
-              <h2 className="editorial mt-1 text-2xl font-bold leading-snug tracking-tight text-[#220749] sm:text-[1.75rem]">
-                Missed Hack2Skill Registration for Take Off With GenXCode?
-              </h2>
-
-              <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-[#76678a] sm:text-sm">
-                Make sure your official Hack2Skill registration is also
-                completed on the event portal so your hackathon entry stays
-                synced.
-              </p>
-            </div>
-
-            <div className="w-full shrink-0 md:w-auto">
-              <a
-                href={HACK2SKILL_EVENT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs font-bold md:w-auto"
-              >
-                <span>Complete Now</span>
-                <ExternalLink size={14} />
-              </a>
-            </div>
-          </div>
-        </aside>
-
-        {/* 1. Two-Column Identity & Pass Deck */}
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Section 1: Two-Column Identity & Pass Deck */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* LEFT CARD: Participant / Staff Credential Card */}
           <article className="flex flex-col justify-between rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.04)] sm:p-7 lg:col-span-7">
             <div>
               <div className="flex items-center justify-between gap-3 border-b border-[#f0e8f8] pb-4">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold text-[#5f2295]">
                     {isStaff ? "Staff credential" : "Participant credential"}
                   </p>
 
-                  <p className="mt-0.5 break-all text-sm text-[#76678a]">
+                  <p className="mt-0.5 truncate text-sm text-[#76678a]">
                     {user.email}
                   </p>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eefaf1] px-3 py-1 text-xs font-semibold text-[#1b7a37]">
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#eefaf1] px-3 py-1 text-xs font-semibold text-[#1b7a37]">
                   <CheckCircle2 size={13} strokeWidth={2.4} />
                   <span>{isStaff ? "Active" : "Confirmed"}</span>
                 </span>
@@ -393,7 +396,20 @@ export default async function DashboardPage({
               {!isStaff && (
                 <dl className="mt-5 space-y-2.5 border-t border-[#e8e2d7] pt-4 text-xs">
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[#837b72]">Problem statement</dt>
+                    <dt className="flex items-center gap-1.5 text-[#837b72]">
+                      {selectedProblem ? (
+                        <CheckCircle2
+                          size={13}
+                          className="shrink-0 text-[#1b7a37]"
+                        />
+                      ) : (
+                        <Circle
+                          size={13}
+                          className="shrink-0 text-[#8638cd]"
+                        />
+                      )}
+                      <span>Problem statement</span>
+                    </dt>
 
                     <dd className="max-w-[60%] truncate font-semibold text-[#1d1a18]">
                       {selectedProblem ? (
@@ -443,22 +459,20 @@ export default async function DashboardPage({
           </article>
         </div>
 
-        {/* 2. Participant Updates & Problem Statement Selector */}
+        {/* Section 2: Participant Updates & Problem Statement Selector */}
         {!isStaff && (
-          <div className="mt-10">
-            <DashboardUpdates
-              events={events}
-              problems={problems}
-              selectedProblemStatementId={
-                selection?.problem_statement_id ?? null
-              }
-            />
-          </div>
+          <DashboardUpdates
+            events={events}
+            problems={problems}
+            selectedProblemStatementId={
+              selection?.problem_statement_id ?? null
+            }
+          />
         )}
 
-        {/* 3. Important Information & Readiness Guide */}
+        {/* Section 3: Important Information & Readiness Guide */}
         {!isStaff && (
-          <section className="mt-10 rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.03)] sm:p-8">
+          <section className="rounded-[1.5rem] border border-[#eadff5] bg-white p-6 shadow-[0_12px_36px_rgba(34,4,75,0.03)] sm:p-8">
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#f0e8f8] pb-5">
               <div>
                 <p className="editorial text-[16px] italic text-[#5f2295]">
