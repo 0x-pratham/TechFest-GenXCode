@@ -80,6 +80,14 @@ const SPONSORS: SponsorItem[] = [
     paddingClass: "p-3 sm:p-4",
     renderFallbackTile: () => <GoogleDevelopersFallbackTile />,
   },
+  {
+    id: "gipitronix",
+    name: "Gipitronix Pvt ltd",
+    logoSrc: "https://i.ibb.co/vCDGv6Vk/gipitronixhd.jpg",
+    href: "https://www.gipitronix.com/home.php",
+    bgClass: "bg-white",
+    paddingClass: "p-3 sm:p-4",
+  },
 ];
 
 function SponsorTile({
